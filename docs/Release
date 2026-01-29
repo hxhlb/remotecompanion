@@ -6,10 +6,10 @@ Codename: ios
 Architectures: iphoneos-arm iphoneos-arm64
 Description: Official repository for RemoteCompanion tweaks.
 MD5Sum:
- e04121413cf39949633a9fa564cca46b 4720 Packages
- 41f07aaea6d9be73a11d507af085229f 1268 Packages.bz2
- fa304a193c2580487bede41792ad2413 1083 Packages.zst
+ 7d138ce60d8ee4db04437f1db73289ac 5322 Packages
+ 5aa0cb7f327ad4f052e4a8eae49efb63 1436 Packages.bz2
+ eae3f61e806fcac33ece78d50fc99edb 1185 Packages.zst
 SHA256:
- a0ae4e134c86e2ad30c520b5513aa8e185c64487adfdf5a71333232d19215b63 4720 Packages
- 54b35fff6f80120c7a5e681c560b928ea12b84744743428849d6347d8be05f08 1268 Packages.bz2
- 0ee66f8fa09b2e0dfeeb1e7bc1ab90c4e98a3f8a624e2d2b770a0ba271132f64 1083 Packages.zst
+ 02da2535540cef8adbc2d10c7d85c26736dde76904ae6a5b491af20d33c68ad4 5322 Packages
+ 10e2e038f3563deb0a1cb425e4e88d09f015994e988f022a6c602cfc5ab58958 1436 Packages.bz2
+ e4d5cb05ac77fa017e8396819e5595a41ad3266037a6759765d1414fdc0a7a6e 1185 Packages.zst

@@ -2,14 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.1] - 2026-01-29
+## [2.0.0~beta1] - 2026-01-29
+
+### Added
+- **Ringer Switch Automation**: Triggers for muting, unmuting, and toggling the ringer switch (works with hardware switch and Control Center).
+- **Respring Action**: Added a native "Respring Device" action to the UI and improved the `respring` command reliability by using `killall backboardd`.
 
 ### Fixed
 - **Open App Action**: Fixed "Open App" action failing by restoring the missing `uiopen` command handler in the Tweak.
 - **Custom Command Repair**: Fixed "Custom Command" actions failing when using `rc <command>` by intercepting the `rc` prefix and executing it internally.
-
-### Added
-- **Respring Action**: Added a native "Respring Device" action to the UI and improved the `respring` command reliability by using `killall backboardd`.
 
 ## [1.1.0] - 2026-01-29
 
