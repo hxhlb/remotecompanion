@@ -2,15 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.2] - 2026-01-29
-
-### Fixed
-- **Custom Command Repair**: Fixed "Custom Command" actions failing when using `rc <command>` by intercepting the `rc` prefix and executing it internally, bypassing the shell requirement.
-
 ## [1.1.1] - 2026-01-29
 
 ### Fixed
 - **Open App Action**: Fixed "Open App" action failing by restoring the missing `uiopen` command handler in the Tweak.
+- **Custom Command Repair**: Fixed "Custom Command" actions failing when using `rc <command>` by intercepting the `rc` prefix and executing it internally.
 
 ## [1.1.0] - 2026-01-29
 
