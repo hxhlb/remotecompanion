@@ -3080,9 +3080,12 @@ static void handle_hid_event(void* target, void* refcon, IOHIDEventSystemClientR
             if (g_bioFingerDownTime != 0 && !isStale) {
                 // STATE = DOWN. This event must be LIFT.
                 
-                // ADD TINY DELAY (0.1s) to lift handling to solve Race Conditions
-                // This gives our unlock hooks time to set suppression if this was a valid unlock match.
-                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                // VARIABLE DELAY:
+                // If we started on the lockscreen, we need a bigger window (0.4s) for biometrics to "win" the race.
+                // If we're already unlocked, we want it fast (0.05s) for responsiveness.
+                NSTimeInterval liftDelay = g_bioWasLocked ? 0.4 : 0.05;
+
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(liftDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                     if (g_bioFingerDownTime == 0) return; // Already handled or reset
 
                     // Cancel timer if running.
@@ -3140,6 +3143,12 @@ static void handle_hid_event(void* target, void* refcon, IOHIDEventSystemClientR
 
                     g_bioWatchdogTimer = nil; // Timer is done.
                     
+                    // Check ignore window first
+                    if ([[NSDate date] timeIntervalSince1970] < g_bioIgnoreUntil) {
+                        SRLog(@"[SpringRemote-Bio] Suppressing Hold (Inside Ignore Window)");
+                        return;
+                    }
+
                     // STATE-AWARE SUPPRESSION (Hold):
                     Class LSMC2 = objc_getClass("SBLockScreenManager");
                     SBLockScreenManager *lsm2 = LSMC2 ? [LSMC2 sharedInstance] : nil;
