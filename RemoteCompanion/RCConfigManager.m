@@ -63,6 +63,7 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
         // Auto-add any missing triggers (for upgrades)
         NSMutableDictionary *triggers = _config[@"triggers"];
         NSArray *allKeys = @[@"volume_up_hold", @"volume_down_hold", @"power_double_tap", @"power_long_press", 
+                             @"power_triple_click", @"power_quadruple_click", 
                              @"trigger_statusbar_left_hold", @"trigger_statusbar_center_hold", @"trigger_statusbar_right_hold", 
                              @"trigger_statusbar_swipe_left", @"trigger_statusbar_swipe_right", @"trigger_home_double_tap",
                              @"trigger_home_triple_click", @"trigger_home_quadruple_click", @"trigger_home_double_click",
@@ -102,6 +103,8 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
                 @"volume_down_hold": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
                 @"power_double_tap": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
                 @"power_long_press": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
+                @"power_triple_click": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
+                @"power_quadruple_click": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
                 @"trigger_statusbar_left_hold": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
                 @"trigger_statusbar_center_hold": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
                 @"trigger_statusbar_right_hold": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
@@ -182,7 +185,7 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
 }
 
 - (NSArray<NSString *> *)allTriggerKeys {
-    return @[@"volume_up_hold", @"volume_down_hold", @"volume_both_press", @"power_double_tap", @"power_long_press", @"trigger_statusbar_left_hold", @"trigger_statusbar_center_hold", @"trigger_statusbar_right_hold", @"trigger_statusbar_swipe_left", @"trigger_statusbar_swipe_right", @"trigger_home_double_tap", @"trigger_home_triple_click", @"trigger_home_quadruple_click", @"trigger_edge_left_swipe_up", @"trigger_edge_left_swipe_down", @"trigger_edge_right_swipe_up", @"trigger_edge_right_swipe_down"];
+    return @[@"volume_up_hold", @"volume_down_hold", @"volume_both_press", @"power_double_tap", @"power_long_press", @"power_triple_click", @"power_quadruple_click", @"trigger_statusbar_left_hold", @"trigger_statusbar_center_hold", @"trigger_statusbar_right_hold", @"trigger_statusbar_swipe_left", @"trigger_statusbar_swipe_right", @"trigger_home_double_tap", @"trigger_home_triple_click", @"trigger_home_quadruple_click", @"trigger_edge_left_swipe_up", @"trigger_edge_left_swipe_down", @"trigger_edge_right_swipe_up", @"trigger_edge_right_swipe_down"];
 }
 
 - (NSString *)displayNameForTrigger:(NSString *)triggerKey {
@@ -192,6 +195,8 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
         @"volume_both_press": @"Volume Up + Down (Both)",
         @"power_double_tap": @"Power Double-Tap",
         @"power_long_press": @"Power Long Press",
+        @"power_triple_click": @"Power Triple Click",
+        @"power_quadruple_click": @"Power Quadruple Click",
         @"trigger_statusbar_left_hold": @"Status Bar Left Hold",
         @"trigger_statusbar_center_hold": @"Status Bar Center Hold",
         @"trigger_statusbar_right_hold": @"Status Bar Right Hold",

@@ -123,7 +123,7 @@
     [sections addObject:@[@"volume_up_hold", @"volume_down_hold", @"volume_both_press"]];
     [titles addObject:@"Volume Buttons"];
     
-    [sections addObject:@[@"power_double_tap", @"power_long_press"]];
+    [sections addObject:@[@"power_double_tap", @"power_triple_click", @"power_quadruple_click", @"power_long_press"]];
     [titles addObject:@"Power Button"];
     
     [sections addObject:@[@"trigger_statusbar_left_hold", @"trigger_statusbar_center_hold", @"trigger_statusbar_right_hold", @"trigger_statusbar_swipe_left", @"trigger_statusbar_swipe_right"]];

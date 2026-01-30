@@ -2512,7 +2512,7 @@ static NSTimer *g_lockButtonTimer = nil;
 static BOOL g_lockButtonTriggered = NO;
 static NSTimer *g_systemPowerOffTimer = nil; // New for dual-stage
 static BOOL g_forceSystemLongPress = NO;     // New for dual-stage
-static NSTimeInterval g_lastPowerUpTime = 0;
+// static NSTimeInterval g_lastPowerUpTime = 0; // Removed unused variable
 
 
 
@@ -2740,6 +2740,10 @@ typedef void (*IOHIDEventSystemClientEventCallback)(void* target, void* refcon, 
 
 static int g_homeClickCount = 0;
 static NSTimer *g_homeClickTimer = nil;
+
+// Power Button Multi-Click Globals
+static int g_powerClickCount = 0;
+static NSTimer *g_powerClickTimer = nil;
 static NSTimeInterval g_lastHIDTime = 0;
 static BOOL g_hidButtonDown = NO;
 static IOHIDEventSystemClientRef g_hidClient = NULL;
@@ -2804,6 +2808,71 @@ static void RC_CheckAndFire() {
     }];
 }
 
+static void RC_CheckAndFirePower();
+
+static void RC_ProcessPowerClick() {
+    // 1. Reset timer
+    if (g_powerClickTimer) {
+        [g_powerClickTimer invalidate];
+        g_powerClickTimer = nil;
+    }
+    
+    g_powerClickCount++;
+    SRLog(@"[SpringRemote-HID] ⚡️ POWER CLICK DETECTED. Count: %d", g_powerClickCount);
+    
+    // Dispatch timer scheduling to Main Thread to be safe with Timers/RunLoops
+    dispatch_async(dispatch_get_main_queue(), ^{
+        RC_CheckAndFirePower();
+    });
+}
+
+// Power Button Multi-Click Logic
+static void RC_CheckAndFirePower() {
+    // 1. Reset timer
+    if (g_powerClickTimer) {
+        [g_powerClickTimer invalidate];
+        g_powerClickTimer = nil;
+    }
+    
+    load_trigger_config();
+    BOOL masterEnabled = [g_triggerConfig[@"masterEnabled"] boolValue];
+    BOOL quadEnabled = masterEnabled && [g_triggerConfig[@"triggers"][@"power_quadruple_click"][@"enabled"] boolValue];
+    
+    // 3. IMMEDIATE FIRE CHECK (Quadruple)
+    if (quadEnabled && g_powerClickCount >= 4) {
+        SRLog(@"[SpringRemote] 🚀 POWER QUAD CLICK (4+) REACHED! Firing.");
+        trigger_haptic();
+        RCExecuteTrigger(@"power_quadruple_click");
+        g_powerClickCount = 0;
+        return;
+    }
+    
+    // 4. Timeout
+    NSTimeInterval timeout = 0.4; 
+    
+    // 5. Schedule Timer
+    g_powerClickTimer = [NSTimer scheduledTimerWithTimeInterval:timeout repeats:NO block:^(NSTimer *timer) {
+        g_powerClickTimer = nil;
+        SRLog(@"[SpringRemote] POWER SEQUENCE ENDED. Final count: %d", g_powerClickCount);
+        
+        NSString *triggerKey = nil;
+        
+        if (g_powerClickCount == 4) triggerKey = @"power_quadruple_click"; // Backup if immediate failed or disabled? No, if disabled we land here.
+        else if (g_powerClickCount == 3) triggerKey = @"power_triple_click";
+        else if (g_powerClickCount == 2) triggerKey = @"power_double_tap";
+        
+        if (triggerKey && masterEnabled) {
+            BOOL enabled = [g_triggerConfig[@"triggers"][triggerKey][@"enabled"] boolValue];
+            if (enabled) {
+                SRLog(@"[SpringRemote] ✅ FIRING POWER TRIGGER: %@", triggerKey);
+                trigger_haptic();
+                RCExecuteTrigger(triggerKey);
+            }
+        }
+        g_powerClickCount = 0;
+    }];
+}
+
 static void handle_hid_event(void* target, void* refcon, IOHIDEventSystemClientRef service, IOHIDEventRef event) {
     if (IOHIDEventGetType(event) == kIOHIDEventTypeKeyboard) {
         int usagePage = IOHIDEventGetIntegerValue(event, kIOHIDEventFieldKeyboardUsagePage);
@@ -2828,6 +2897,30 @@ static void handle_hid_event(void* target, void* refcon, IOHIDEventSystemClientR
                         SRLog(@"[SpringRemote-HID] 🕹️ Home UP");
                         RC_ProcessHomeClick();
                     }
+                }
+            }
+        }
+        
+        // Power Button (Page 0x0C, Usage 0x30)
+        if (usagePage == kHIDPage_Consumer && usage == kHIDUsage_Csmr_Power) {
+            NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+            static BOOL powerIsDown = NO;
+            static NSTimeInterval lastPowerDownTime = 0;
+
+            if (down) {
+                if (!powerIsDown) {
+                    powerIsDown = YES;
+                    lastPowerDownTime = now;
+                    SRLog(@"[SpringRemote-HID] ⚡️ Power DOWN");
+                }
+            } else { // UP
+                if (powerIsDown) {
+                    if (now - lastPowerDownTime > 0.05) { // 50ms Debounce
+                        powerIsDown = NO;
+                        SRLog(@"[SpringRemote-HID] ⚡️ Power UP");
+                        RC_ProcessPowerClick();
+                    }
+                    powerIsDown = NO; // Handle fast bounce
                 }
             }
         }
@@ -2926,6 +3019,14 @@ static void setup_background_hid_listener() {
             }];
         }
     }
+
+    // SUPPRESSION: If a multi-click sequence is in progress, swallow the DOWN event.
+    // This stops the phone from waking/locking on subsequent clicks.
+    if (g_powerClickCount >= 1) {
+        SRLog(@"[SpringRemote] Suppressing system DOWN for click sequence (count=%d)", g_powerClickCount);
+        return;
+    }
+
     %orig;
 }
 
@@ -2950,26 +3051,12 @@ static void setup_background_hid_listener() {
         return; 
     }
 
-    // Manual Double Tap Logic
-    NSTimeInterval now = [[NSDate date] timeIntervalSinceReferenceDate];
-    NSTimeInterval diff = now - g_lastPowerUpTime;
-    
-    // Check for double tap (within 0.4s) AND basic debounce (> 0.1s to avoid duplicate calls)
-    if (diff < 0.4 && diff > 0.1) {
-        // It's a double tap!
-        load_trigger_config();
-        BOOL enabled = [g_triggerConfig[@"masterEnabled"] boolValue] && 
-                       [g_triggerConfig[@"triggers"][@"power_double_tap"][@"enabled"] boolValue];
-        
-        if (enabled) {
-            trigger_haptic();
-            RCExecuteTrigger(@"power_double_tap");
-            SRLog(@"[SpringRemote] Power Double Tap Fired (Manual Detection)");
-            g_lastPowerUpTime = 0; // Reset
-            return; // Suppress default?
-        }
+    // SUPPRESSION: Swallow UP events for 2nd click onwards.
+    // Click 1 passes %orig so system can lock/wake normally if sequence stops.
+    if (g_powerClickCount >= 2) {
+        SRLog(@"[SpringRemote] Suppressing system UP for click #%d", g_powerClickCount);
+        return;
     }
-    g_lastPowerUpTime = now;
 
     %orig;
 }
@@ -2992,17 +3079,32 @@ static void setup_background_hid_listener() {
 }
 
 - (void)performDoublePressActions {
-    SRLog(@"[SpringRemote] performDoublePressActions called");
+    SRLog(@"[SpringRemote] performDoublePressActions called (System)");
+    // We handle double press manually in performButtonUpPreActions to support Triple/Quad clicks.
+    // So we do NOT fire "power_double_tap" here to avoid duplicates.
+    // However, if we suppress %orig completely, we might break Wallet double-click.
+    // For now, let's just allow orig so system features work, 
+    // relying on our manual counter for OUR actions.
+    
+    // Logic: If we have a configured double tap action, our manual handler will fire it.
+    // If not, this does nothing related to us.
+    
+    /*
     load_trigger_config();
     BOOL enabled = [g_triggerConfig[@"masterEnabled"] boolValue] && 
                    [g_triggerConfig[@"triggers"][@"power_double_tap"][@"enabled"] boolValue];
 
     if (enabled) {
+        // Don't fire here, manual handler does it.
+    }
+    */
+    /*
         trigger_haptic();
         RCExecuteTrigger(@"power_double_tap");
         SRLog(@"[SpringRemote] Power Double Tap Fired (Actions)");
         return; 
     }
+    */
     %orig;
 }
 
