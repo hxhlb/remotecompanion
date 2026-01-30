@@ -3143,24 +3143,30 @@ static void handle_hid_event(void* target, void* refcon, IOHIDEventSystemClientR
 
                     g_bioWatchdogTimer = nil; // Timer is done.
                     
-                    // Check ignore window first
-                    if ([[NSDate date] timeIntervalSince1970] < g_bioIgnoreUntil) {
-                        SRLog(@"[SpringRemote-Bio] Suppressing Hold (Inside Ignore Window)");
-                        return;
-                    }
-
-                    // STATE-AWARE SUPPRESSION (Hold):
-                    Class LSMC2 = objc_getClass("SBLockScreenManager");
-                    SBLockScreenManager *lsm2 = LSMC2 ? [LSMC2 sharedInstance] : nil;
-                    BOOL currentlyLocked2 = lsm2 ? [lsm2 isUILocked] : NO;
+                    // ADD DECISION WINDOW FOR HOLD (0.3s)
+                    // Similar to the Tap fix, we wait a moment on the lockscreen to let biometrics "win".
+                    NSTimeInterval holdDecisionDelay = g_bioWasLocked ? 0.3 : 0.0;
                     
-                    if (g_bioWasLocked && !currentlyLocked2) {
-                        SRLog(@"[SpringRemote-Bio] Suppressing Hold (Unlock succeeded during delay)");
-                        return;
-                    }
+                    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(holdDecisionDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                        // Check ignore window first
+                        if ([[NSDate date] timeIntervalSince1970] < g_bioIgnoreUntil) {
+                            SRLog(@"[SpringRemote-Bio] Suppressing Hold (Inside Ignore Window)");
+                            return;
+                        }
 
-                    trigger_haptic();
-                    RCExecuteTrigger(@"touchid_hold");
+                        // STATE-AWARE SUPPRESSION (Hold):
+                        Class LSMC2 = objc_getClass("SBLockScreenManager");
+                        SBLockScreenManager *lsm2 = LSMC2 ? [LSMC2 sharedInstance] : nil;
+                        BOOL currentlyLocked2 = lsm2 ? [lsm2 isUILocked] : NO;
+                        
+                        if (g_bioWasLocked && !currentlyLocked2) {
+                            SRLog(@"[SpringRemote-Bio] Suppressing Hold (Unlock succeeded during decision window)");
+                            return;
+                        }
+
+                        trigger_haptic();
+                        RCExecuteTrigger(@"touchid_hold");
+                    });
                 }];
             }
         });
