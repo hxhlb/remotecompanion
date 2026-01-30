@@ -2929,6 +2929,25 @@ static void handle_hid_event(void* target, void* refcon, IOHIDEventSystemClientR
                     g_powerIsDown = YES;
                     lastPowerDownTime = now;
                     SRLog(@"[SpringRemote-HID] ⚡️ Power DOWN");
+
+                    // Check for simultaneous press if Volume is already down
+                    if (g_volUpIsDown || g_volDownIsDown) {
+                        NSString *triggerKey = g_volUpIsDown ? @"power_volume_up" : @"power_volume_down";
+                        load_trigger_config();
+                        BOOL masterEnabled = [g_triggerConfig[@"masterEnabled"] boolValue];
+                        BOOL enabled = masterEnabled && [g_triggerConfig[@"triggers"][triggerKey][@"enabled"] boolValue];
+                        
+                        if (enabled && !g_powerVolComboTriggered) {
+                            SRLog(@"[SpringRemote-HID] ⚡️+🔊 POWER + VOLUME COMBINATION DETECTED (Power after Volume): %@", triggerKey);
+                            g_powerVolComboTriggered = YES;
+                            dispatch_async(dispatch_get_main_queue(), ^{
+                                 if (g_volUpTimer) { [g_volUpTimer invalidate]; g_volUpTimer = nil; }
+                                 if (g_volDownTimer) { [g_volDownTimer invalidate]; g_volDownTimer = nil; }
+                                 trigger_haptic();
+                                 RCExecuteTrigger(triggerKey);
+                            });
+                        }
+                    }
                 }
             } else { // UP
                 if (g_powerIsDown) {
