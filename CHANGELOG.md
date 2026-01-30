@@ -2,13 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0~beta4] - 2026-01-29
+## [2.0.0~beta5] - 2026-01-30
 
 ### Added
-- **Shortcuts Picker Search**: Added a search bar to the "Select Shortcut" screen, making it easier to find specific shortcuts in your library.
-- **UI Polish**: Shortcuts picker icons now match the system accent color (grey).
+- **Siri Activation**: Added the `button siri` command and a native "Activate Siri" action in the Action Picker. Uses a robust multi-stage activation sequence (HID + Programmatic Fallbacks) for maximum reliability on iOS 15+.
+- **Power + Volume Triggers**: Added support for **Power + Volume Up** and **Power + Volume Down** combos.
 
 ### Fixed
+- **Rootless Injection (iOS 15)**: Fixed a critical architecture mismatch in the Tweak control file (`iphoneos-arm` -> `iphoneos-arm64`) that prevented the tweak from loading on rootless jailbreaks.
 - **Shortcuts Menu Regression**: Fixed an issue where selecting "Run Shortcut..." would immediately close the menu without showing the picker.
 - **Search Selection Bug**: Fixed a bug where selecting an action from search results in the Action Picker would fail to correctly dismiss the view.
 
@@ -62,7 +63,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Shortcuts (via Powercuts)
-- **Custom Command**: You can now use `rc open Music` (or any other `rc` command) directly in the Custom Command action to open apps or trigger any system action.
+- **Custom Command**: You can now use `rc haptic` / `rc screenshot` / `rc siri` (or any other `rc` command) directly in the Custom Command action to open apps or trigger any system action.
 - **Settings UI**: Added version label (e.g., `v1.0.3`) to the bottom of the Settings menu.
 - **Improved Layout**: Refactored Settings screen to pin the version label to the bottom of the view, ensuring consistent positioning regardless of screen size.
 - **UI Details**: Matched version label styling to native table view footers (font, color).

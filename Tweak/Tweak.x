@@ -27,6 +27,9 @@
 + (id)sharedInstance;
 - (void)handleVoiceAssistantButtonWithSource:(long long)arg1 direct:(BOOL)arg2;
 - (void)handleVoiceAssistantButtonWithSource:(long long)arg1;
+- (void)_presentForMainScreenAnimated:(BOOL)arg1 options:(id)arg2 completion:(id)arg3;
+- (void)handleSiriButtonDownWithSource:(long long)arg1;
+- (void)handleSiriButtonUpWithSource:(long long)arg1;
 @end
 
 // Lua interpreter
@@ -40,9 +43,57 @@ typedef struct __IOHIDEventSystemClient * IOHIDEventSystemClientRef;
 typedef uint32_t IOHIDEventOptionBits;
 typedef uint32_t IOOptionBits;
 
+void SRLog(NSString *format, ...);
+
 static IOHIDEventSystemClientRef (*_IOHIDEventSystemClientCreate)(CFAllocatorRef allocator);
 static IOHIDEventRef (*_IOHIDEventCreateKeyboardEvent)(CFAllocatorRef allocator, uint64_t timestamp, uint32_t usagePage, uint32_t usage, boolean_t down, IOHIDEventOptionBits flags);
 static void (*_IOHIDEventSystemClientDispatchEvent)(IOHIDEventSystemClientRef client, IOHIDEventRef event);
+
+// Forward declarations for Siri interaction
+@interface SBVoiceControlController : NSObject
+- (void)handleHomeButtonHeld;
+@end
+
+@interface SBSiriHardwareButtonInteraction : NSObject
+- (instancetype)initWithSiriButton:(id)arg1;
+- (void)consumeInitialPressDown;
+- (void)consumeSinglePressUp;
+- (void)consumeLongPress;
+@end
+
+@interface SiriPresentationOptions : NSObject
+- (void)setWakeScreen:(BOOL)arg1;
+@end
+
+// Global captured instances
+static SBVoiceControlController *sharedVoiceControl = nil;
+static NSHashTable *siriInteractions = nil;
+
+@interface LSApplicationWorkspace : NSObject
++ (id)defaultWorkspace;
+- (BOOL)openApplicationWithBundleID:(id)arg1;
+@end
+
+%hook SBVoiceControlController
+- (id)init {
+    id r = %orig;
+    sharedVoiceControl = r;
+    SRLog(@"[SpringRemote] Captured SBVoiceControlController init: %@", r);
+    return r;
+}
+%end
+
+%hook SBSiriHardwareButtonInteraction
+- (id)initWithSiriButton:(id)arg1 {
+    id r = %orig;
+    if (!siriInteractions) {
+        siriInteractions = [NSHashTable weakObjectsHashTable];
+    }
+    [siriInteractions addObject:r];
+    SRLog(@"[SpringRemote] Captured SBSiriHardwareButtonInteraction init: %@", r);
+    return r;
+}
+%end
 
 // Touch/Digitizer event creation
 static IOHIDEventRef (*_IOHIDEventCreateDigitizerEvent)(CFAllocatorRef allocator, uint64_t timeStamp,
@@ -1331,23 +1382,62 @@ static NSString *handle_command(NSString *cmd) {
         } else if ([btn isEqualToString:@"mute"]) {
             inject_hid_event(kHIDPage_Consumer, kHIDUsage_Csmr_Mute, 0, 0);
         } else if ([btn isEqualToString:@"siri"]) {
-            SRLog(@"[SpringRemote] Triggering Siri via button command");
-            dispatch_async(dispatch_get_main_queue(), ^{
+            SRLog(@"[SpringRemote] Triggering Siri Activation");
+            
+            // Simulating a real Home Button Long Press via HID (most reliable)
+            SRLog(@"[SpringRemote] Siri: Attempting HID Long Press (1500ms)");
+            inject_hid_event(kHIDPage_Consumer, kHIDUsage_Csmr_Menu, 1500000000, 0); // 1.5s
+            
+            // Optional: fallback to programmatic triggers if needed
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.8 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                 Class SBAssistantControllerClass = objc_getClass("SBAssistantController");
                 if (SBAssistantControllerClass) {
                     id assistant = [SBAssistantControllerClass sharedInstance];
-                    SRLog(@"[SpringRemote] SBAssistantController instance: %@", assistant);
-                    if ([assistant respondsToSelector:@selector(handleVoiceAssistantButtonWithSource:direct:)]) {
-                        SRLog(@"[SpringRemote] Calling handleVoiceAssistantButtonWithSource:1 direct:YES");
-                        [assistant handleVoiceAssistantButtonWithSource:1 direct:YES];
-                    } else if ([assistant respondsToSelector:@selector(handleVoiceAssistantButtonWithSource:)]) {
-                        SRLog(@"[SpringRemote] Calling handleVoiceAssistantButtonWithSource:1");
-                        [assistant handleVoiceAssistantButtonWithSource:1];
-                    } else {
-                        SRLog(@"[SpringRemote] ERROR: SBAssistantController does not respond to expected selectors");
+                    if ([assistant respondsToSelector:@selector(isVisible)] && ![assistant isVisible]) {
+                        SRLog(@"[SpringRemote] Siri: Not visible after HID, attempting interaction consumption...");
+                        
+                        for (id interaction in siriInteractions) {
+                            if ([interaction respondsToSelector:@selector(consumeLongPress)]) {
+                                SRLog(@"[SpringRemote] Siri: Calling consumeLongPress on interaction: %@", interaction);
+                                [interaction consumeLongPress];
+                            }
+                        }
+
+                        // Fallback sequence
+                        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.8 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                            if ([assistant respondsToSelector:@selector(isVisible)] && ![assistant isVisible]) {
+                                SRLog(@"[SpringRemote] Siri: Still not visible, trying handleVoiceAssistantButtonWithSource (1, 9, 2)...");
+                                int sources[] = {1, 9, 2};
+                                for (int i = 0; i < 3; i++) {
+                                    if ([assistant respondsToSelector:@selector(handleVoiceAssistantButtonWithSource:direct:)]) {
+                                        [assistant handleVoiceAssistantButtonWithSource:sources[i] direct:YES];
+                                    } else if ([assistant respondsToSelector:@selector(handleVoiceAssistantButtonWithSource:)]) {
+                                        [assistant handleVoiceAssistantButtonWithSource:sources[i]];
+                                    }
+                                }
+                            }
+                        });
+
+                        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                            if ([assistant respondsToSelector:@selector(isVisible)] && ![assistant isVisible]) {
+                                SRLog(@"[SpringRemote] Siri: LAST RESORT - Open com.apple.SiriViewService");
+                                Class LSWorkspace = objc_getClass("LSApplicationWorkspace");
+                                if (LSWorkspace) {
+                                    [[LSWorkspace defaultWorkspace] openApplicationWithBundleID:@"com.apple.SiriViewService"];
+                                }
+                            }
+                        });
+                        
+                        // Ultra last resort if still nothing
+                        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(4.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                             if ([assistant respondsToSelector:@selector(isVisible)] && ![assistant isVisible]) {
+                                 SRLog(@"[SpringRemote] Siri: ULTRA LAST RESORT - _presentForMainScreenAnimated");
+                                 if ([assistant respondsToSelector:@selector(_presentForMainScreenAnimated:options:completion:)]) {
+                                     [assistant _presentForMainScreenAnimated:YES options:nil completion:nil];
+                                 }
+                             }
+                        });
                     }
-                } else {
-                    SRLog(@"[SpringRemote] ERROR: SBAssistantController class not found");
                 }
             });
         } else {
@@ -1390,6 +1480,59 @@ static NSString *handle_command(NSString *cmd) {
         }
         free(methods);
         return [NSString stringWithFormat:@"Found %u methods for %@. Check logs.\n", count, className];
+    } else if ([cleanCmd hasPrefix:@"debug-classes "]) {
+        NSString *search = [[cleanCmd substringFromIndex:14] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+        SRLog(@"[SpringRemote] Searching for classes containing: %@", search);
+        
+        int numClasses = objc_getClassList(NULL, 0);
+        if (numClasses > 0) {
+            Class *classes = (Class *)malloc(sizeof(Class) * numClasses);
+            numClasses = objc_getClassList(classes, numClasses);
+            SRLog(@"[SpringRemote] Found %d total classes. Filtering...", numClasses);
+            for (int i = 0; i < numClasses; i++) {
+                NSString *className = NSStringFromClass(classes[i]);
+                if ([className rangeOfString:search options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                    SRLog(@"[SpringRemote]   * %@", className);
+                }
+            }
+            free(classes);
+        }
+        return @"Search complete. Check logs.\n";
+    } else if ([cleanCmd hasPrefix:@"debug-call "]) {
+        // debug-call ClassName selectorName
+        NSString *args = [cleanCmd substringFromIndex:11];
+        NSArray *parts = [args componentsSeparatedByString:@" "];
+        if (parts.count >= 2) {
+            NSString *className = parts[0];
+            NSString *selName = parts[1];
+            Class cls = objc_getClass([className UTF8String]);
+            if (cls) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    id target = nil;
+                    if ([cls respondsToSelector:@selector(sharedInstance)]) {
+                        target = [cls performSelector:@selector(sharedInstance)];
+                    } else if ([cls respondsToSelector:@selector(sharedController)]) {
+                        target = [cls performSelector:@selector(sharedController)];
+                    }
+                    
+                    if (target) {
+                        SEL sel = NSSelectorFromString(selName);
+                        if ([target respondsToSelector:sel]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+                            id result = [target performSelector:sel];
+#pragma clang diagnostic pop
+                            SRLog(@"[SpringRemote] debug-call [%@ %@] returned: %@", className, selName, result);
+                        } else {
+                            SRLog(@"[SpringRemote] debug-call: Target does not respond to %@", selName);
+                        }
+                    } else {
+                        SRLog(@"[SpringRemote] debug-call: Could not get instance for %@", className);
+                    }
+                });
+            }
+        }
+        return @"Call initiated. Check logs.\n";
     } else if ([cleanCmd isEqualToString:@"lock status"]) {
         __block NSString *result = @"error";
         dispatch_sync(dispatch_get_main_queue(), ^{

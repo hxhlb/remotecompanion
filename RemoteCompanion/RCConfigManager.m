@@ -536,7 +536,7 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
         @"anc transparency": @"waveform.circle.fill",
         @"airplay disconnect": @"airplayaudio.badge.exclamationmark",
         @"mute toggle": @"speaker.slash.fill",
-        @"siri": @"mic.fill"
+        @"siri": @"mic.circle.fill"
     };
     
     return icons[cmd] ?: @"circle.fill";
