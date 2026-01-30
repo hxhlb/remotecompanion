@@ -2512,6 +2512,8 @@ static NSTimer *g_lockButtonTimer = nil;
 static BOOL g_lockButtonTriggered = NO;
 static NSTimer *g_systemPowerOffTimer = nil; // New for dual-stage
 static BOOL g_forceSystemLongPress = NO;     // New for dual-stage
+static BOOL g_powerIsDown = NO;
+static BOOL g_powerVolComboTriggered = NO;
 // static NSTimeInterval g_lastPowerUpTime = 0; // Removed unused variable
 
 
@@ -2565,6 +2567,14 @@ static int g_lastRingerState = -1;
     if (g_volIsReplaying) {
         %orig;
         return;
+    }
+
+    if (g_powerIsDown) {
+        load_trigger_config();
+        if ([g_triggerConfig[@"masterEnabled"] boolValue] && [g_triggerConfig[@"triggers"][@"power_volume_up"][@"enabled"] boolValue]) {
+            SRLog(@"[SpringRemote] Suppressing Volume Up because Power is DOWN (Combo)");
+            return;
+        }
     }
 
     g_volUpIsDown = YES;
@@ -2636,6 +2646,14 @@ static int g_lastRingerState = -1;
     if (g_volIsReplaying) {
         %orig;
         return;
+    }
+
+    if (g_powerIsDown) {
+        load_trigger_config();
+        if ([g_triggerConfig[@"masterEnabled"] boolValue] && [g_triggerConfig[@"triggers"][@"power_volume_down"][@"enabled"] boolValue]) {
+            SRLog(@"[SpringRemote] Suppressing Volume Down because Power is DOWN (Combo)");
+            return;
+        }
     }
 
     g_volDownIsDown = YES;
@@ -2904,23 +2922,30 @@ static void handle_hid_event(void* target, void* refcon, IOHIDEventSystemClientR
         // Power Button (Page 0x0C, Usage 0x30)
         if (usagePage == kHIDPage_Consumer && usage == kHIDUsage_Csmr_Power) {
             NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
-            static BOOL powerIsDown = NO;
             static NSTimeInterval lastPowerDownTime = 0;
 
             if (down) {
-                if (!powerIsDown) {
-                    powerIsDown = YES;
+                if (!g_powerIsDown) {
+                    g_powerIsDown = YES;
                     lastPowerDownTime = now;
                     SRLog(@"[SpringRemote-HID] ⚡️ Power DOWN");
                 }
             } else { // UP
-                if (powerIsDown) {
+                if (g_powerIsDown) {
                     if (now - lastPowerDownTime > 0.05) { // 50ms Debounce
-                        powerIsDown = NO;
+                        g_powerIsDown = NO;
                         SRLog(@"[SpringRemote-HID] ⚡️ Power UP");
-                        RC_ProcessPowerClick();
+                        
+                        // If a combo was triggered, DON'T count this as a click for multi-tap
+                        if (g_powerVolComboTriggered) {
+                            SRLog(@"[SpringRemote-HID] Combo was triggered, resetting power click count.");
+                            g_powerClickCount = 0;
+                            g_powerVolComboTriggered = NO;
+                        } else {
+                            RC_ProcessPowerClick();
+                        }
                     }
-                    powerIsDown = NO; // Handle fast bounce
+                    g_powerIsDown = NO; // Handle fast bounce
                 }
             }
         }
@@ -2929,6 +2954,30 @@ static void handle_hid_event(void* target, void* refcon, IOHIDEventSystemClientR
         if (usagePage == kHIDPage_Consumer && (usage == kHIDUsage_Csmr_VolumeIncrement || usage == kHIDUsage_Csmr_VolumeDecrement)) {
             if (usage == kHIDUsage_Csmr_VolumeIncrement) g_volUpIsDown = !!down;
             if (usage == kHIDUsage_Csmr_VolumeDecrement) g_volDownIsDown = !!down;
+            
+            // Check for Power + Volume combination
+            if (down && g_powerIsDown) {
+                NSString *triggerKey = (usage == kHIDUsage_Csmr_VolumeIncrement) ? @"power_volume_up" : @"power_volume_down";
+                load_trigger_config();
+                BOOL masterEnabled = [g_triggerConfig[@"masterEnabled"] boolValue];
+                BOOL enabled = masterEnabled && [g_triggerConfig[@"triggers"][triggerKey][@"enabled"] boolValue];
+                
+                if (enabled) {
+                    SRLog(@"[SpringRemote-HID] ⚡️+🔊 POWER + VOLUME COMBINATION DETECTED: %@", triggerKey);
+                    g_powerVolComboTriggered = YES;
+                    
+                    // Invalidate standard timers in Main Thread
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                         if (g_volUpTimer) { [g_volUpTimer invalidate]; g_volUpTimer = nil; }
+                         if (g_volDownTimer) { [g_volDownTimer invalidate]; g_volDownTimer = nil; }
+                         trigger_haptic();
+                         RCExecuteTrigger(triggerKey);
+                    });
+                    
+                    // We might want to swallow the volume event here, but HID listener is just a listener.
+                    // The Volume hooks will also fire, we handle suppression there too.
+                }
+            }
             
             if (g_volUpIsDown && g_volDownIsDown) {
                 if (!g_volComboTriggered) {
@@ -3055,6 +3104,13 @@ static void setup_background_hid_listener() {
     // Click 1 passes %orig so system can lock/wake normally if sequence stops.
     if (g_powerClickCount >= 2) {
         SRLog(@"[SpringRemote] Suppressing system UP for click #%d", g_powerClickCount);
+        return;
+    }
+
+    // SUPPRESSION: If a Power + Volume combo was triggered, swallow the Power UP as well.
+    if (g_powerVolComboTriggered) {
+        SRLog(@"[SpringRemote] Suppressing system UP because a Power + Volume combo was triggered.");
+        // g_powerVolComboTriggered will be reset in handle_hid_event UP
         return;
     }
 

@@ -72,6 +72,7 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
                              @"trigger_edge_left_swipe_up", @"trigger_edge_left_swipe_down", 
                              @"trigger_edge_right_swipe_up", @"trigger_edge_right_swipe_down",
                              @"volume_both_press",
+                             @"power_volume_up", @"power_volume_down",
                              @"trigger_ringer_mute", @"trigger_ringer_unmute", @"trigger_ringer_toggle"];
         
         BOOL needsSave = NO;
@@ -119,6 +120,8 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
                 @"trigger_edge_right_swipe_up": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
                 @"trigger_edge_right_swipe_down": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
                 @"volume_both_press": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
+                @"power_volume_up": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
+                @"power_volume_down": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
                 @"trigger_ringer_mute": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
                 @"trigger_ringer_unmute": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
                 @"trigger_ringer_toggle": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy]
@@ -197,6 +200,8 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
         @"power_long_press": @"Power Long Press",
         @"power_triple_click": @"Power Triple Click",
         @"power_quadruple_click": @"Power Quadruple Click",
+        @"power_volume_up": @"Power + Volume Up",
+        @"power_volume_down": @"Power + Volume Down",
         @"trigger_statusbar_left_hold": @"Status Bar Left Hold",
         @"trigger_statusbar_center_hold": @"Status Bar Center Hold",
         @"trigger_statusbar_right_hold": @"Status Bar Right Hold",
