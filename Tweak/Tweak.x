@@ -3095,7 +3095,7 @@ static void handle_hid_event(void* target, void* refcon, IOHIDEventSystemClientR
 
                 
                 if (g_bioWatchdogTimer) [g_bioWatchdogTimer invalidate];
-                g_bioWatchdogTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 repeats:NO block:^(NSTimer *timer) {
+                g_bioWatchdogTimer = [NSTimer scheduledTimerWithTimeInterval:0.5 repeats:NO block:^(NSTimer *timer) {
 
                     g_bioWatchdogTimer = nil; // Timer is done.
                     // DO NOT reset g_bioFingerDownTime here! 
