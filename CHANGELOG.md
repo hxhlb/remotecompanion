@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0~beta4] - 2026-01-29
+
+### Added
+- **Shortcuts Picker Search**: Added a search bar to the "Select Shortcut" screen, making it easier to find specific shortcuts in your library.
+
+### Fixed
+- **Shortcuts Menu Regression**: Fixed an issue where selecting "Run Shortcut..." would immediately close the menu without showing the picker.
+- **Search Selection Bug**: Fixed a bug where selecting an action from search results in the Action Picker would fail to correctly dismiss the view.
+
 ## [2.0.0~beta3] - 2026-01-29
 
 ### Added

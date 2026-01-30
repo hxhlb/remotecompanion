@@ -6,6 +6,7 @@ Control your jailbroken iPhone from anywhere. RemoteCompanion triggers media, ap
 > **What's New in v2.0**
 > - **Ringer Automation**: Mute, Unmute, or Toggle triggers when you flip the ringer switch.
 > - **Respring**: Added a native "Respring Device" action to the UI.
+> - **Shortcuts Search**: Quickly find shortcuts in the app.
 
 <p align="center">
   <img src="images/IMG_1331-1.PNG" width="250" alt="RemoteCompanion Interface" />
