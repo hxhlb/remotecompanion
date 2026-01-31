@@ -3164,8 +3164,14 @@ static void handle_hid_event(void* target, void* refcon, IOHIDEventSystemClientR
                             return;
                         }
 
-                        trigger_haptic();
-                        RCExecuteTrigger(@"touchid_hold");
+                        // Check if trigger is enabled and has actions BEFORE firing haptics
+                        if (g_triggerConfig) {
+                            NSDictionary *holdTrigger = g_triggerConfig[@"triggers"][@"touchid_hold"];
+                            if ([holdTrigger[@"enabled"] boolValue] && [holdTrigger[@"actions"] count] > 0) {
+                                trigger_haptic();
+                                RCExecuteTrigger(@"touchid_hold");
+                            }
+                        }
                     });
                 }];
             }
