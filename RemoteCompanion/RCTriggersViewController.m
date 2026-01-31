@@ -23,25 +23,30 @@
     [super viewDidLoad];
     
     self.navigationController.navigationBar.tintColor = [UIColor labelColor];
+    
+    // Enable Large Titles
+    self.navigationController.navigationBar.prefersLargeTitles = YES;
+    self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeAlways;
     self.title = @"RemoteCompanion";
-    self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeNever;
     
-    UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
-    [appearance configureWithOpaqueBackground];
-    appearance.backgroundColor = [UIColor systemBackgroundColor];
-    appearance.shadowColor = [UIColor clearColor];
-    
-    self.navigationItem.standardAppearance = appearance;
-    self.navigationItem.compactAppearance = appearance;
-    self.navigationItem.scrollEdgeAppearance = appearance;
+    // Use default appearance for translucent blur
+    // We do NOT set standardAppearance/scrollEdgeAppearance to opaque here anymore
     
     self.view.backgroundColor = [UIColor systemBackgroundColor];
     
-    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] 
+    UIBarButtonItem *settingsItem = [[UIBarButtonItem alloc] 
         initWithImage:[UIImage systemImageNamed:@"gear"] 
         style:UIBarButtonItemStylePlain 
         target:self 
         action:@selector(openSettings)];
+        
+    UIBarButtonItem *addItem = [[UIBarButtonItem alloc] 
+        initWithImage:[UIImage systemImageNamed:@"plus"] 
+        style:UIBarButtonItemStylePlain 
+        target:self 
+        action:@selector(addNewItem)];
+        
+    self.navigationItem.rightBarButtonItems = @[addItem, settingsItem];
     
     self.tableView.rowHeight = 64;
     self.tableView.sectionHeaderTopPadding = 0;
@@ -156,6 +161,28 @@
     RCSettingsViewController *settingsVC = [[RCSettingsViewController alloc] init];
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:settingsVC];
     [self presentViewController:nav animated:YES completion:nil];
+}
+
+- (void)addNewItem {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Add Action"
+        message:@"Functionality to add new custom triggers or NFC tags will go here."
+        preferredStyle:UIAlertControllerStyleActionSheet];
+        
+    [alert addAction:[UIAlertAction actionWithTitle:@"Scan NFC Tag" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        // Find existing logic for adding NFC
+        [self tableView:self.tableView didSelectRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:self.sections.count - 1]]; 
+        // Crude way to trigger it, but works since we know the structure. 
+        // Better: refactor the "NFC Add" logic into a method.
+    }]];
+    
+    [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    
+    // For iPad support
+    if (alert.popoverPresentationController) {
+        alert.popoverPresentationController.barButtonItem = self.navigationItem.rightBarButtonItems.firstObject;
+    }
+    
+    [self presentViewController:alert animated:YES completion:nil];
 }
 
 - (void)handleLongPress:(UILongPressGestureRecognizer *)gesture {
