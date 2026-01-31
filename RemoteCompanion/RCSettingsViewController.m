@@ -42,29 +42,16 @@
     
     [self.view addSubview:self.tableView];
     
-    // Constraints (Full Screen)
-    [NSLayoutConstraint activateConstraints:@[
-        [self.tableView.topAnchor constraintEqualToAnchor:self.view.topAnchor],
-        [self.tableView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
-        [self.tableView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-        [self.tableView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor]
-    ]];
-    
-    [self setupTableFooter];
-}
-
-- (void)setupTableFooter {
-    UIView *footerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 100)]; // Height for padding
-    
-    // App Title Label
+    // Setup App Title Label (Sticky Bottom)
     UILabel *appTitleLabel = [[UILabel alloc] init];
     appTitleLabel.translatesAutoresizingMaskIntoConstraints = NO;
     appTitleLabel.textAlignment = NSTextAlignmentCenter;
     appTitleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
     appTitleLabel.textColor = [UIColor secondaryLabelColor];
     appTitleLabel.text = @"RemoteCompanion";
-    
-    // Version Label
+    [self.view addSubview:appTitleLabel];
+
+    // Setup Version Label (Sticky Bottom)
     UILabel *versionLabel = [[UILabel alloc] init];
     versionLabel.translatesAutoresizingMaskIntoConstraints = NO;
     versionLabel.textAlignment = NSTextAlignmentCenter;
@@ -74,19 +61,25 @@
     NSDictionary *infoDict = [[NSBundle mainBundle] infoDictionary];
     NSString *version = [infoDict objectForKey:@"CFBundleShortVersionString"];
     versionLabel.text = [NSString stringWithFormat:@"v%@", version];
+    [self.view addSubview:versionLabel];
     
-    [footerView addSubview:appTitleLabel];
-    [footerView addSubview:versionLabel];
-    
+    // Constraints for Sticky Footer
     [NSLayoutConstraint activateConstraints:@[
-        [appTitleLabel.centerXAnchor constraintEqualToAnchor:footerView.centerXAnchor],
-        [appTitleLabel.topAnchor constraintEqualToAnchor:footerView.topAnchor constant:20],
+        [versionLabel.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [versionLabel.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-10],
         
-        [versionLabel.centerXAnchor constraintEqualToAnchor:footerView.centerXAnchor],
-        [versionLabel.topAnchor constraintEqualToAnchor:appTitleLabel.bottomAnchor constant:2]
+        [appTitleLabel.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [appTitleLabel.bottomAnchor constraintEqualToAnchor:versionLabel.topAnchor constant:-2]
     ]];
     
-    self.tableView.tableFooterView = footerView;
+    // Constraints
+    [NSLayoutConstraint activateConstraints:@[
+        [self.tableView.topAnchor constraintEqualToAnchor:self.view.topAnchor],
+        [self.tableView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+        [self.tableView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+        // The table view ends above the footer labels
+        [self.tableView.bottomAnchor constraintEqualToAnchor:appTitleLabel.topAnchor constant:-10]
+    ]];
 }
 
 - (void)dismissSettings {
