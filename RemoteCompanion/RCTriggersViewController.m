@@ -22,7 +22,7 @@
 - (NSString *)iconNameForTrigger:(NSString *)triggerKey {
     if ([triggerKey containsString:@"volume"]) return @"speaker.wave.2.fill";
     if ([triggerKey containsString:@"power"]) return @"power";
-    if ([triggerKey containsString:@"statusbar"]) return @"platter.top.applewatch.case"; // Approximation for status bar
+    if ([triggerKey containsString:@"statusbar"]) return @"hand.draw"; // Status bar / screen gestures
     if ([triggerKey containsString:@"home"]) return @"circle.circle"; // Home button
     if ([triggerKey containsString:@"ringer"]) return @"bell.fill";
     if ([triggerKey containsString:@"edge"]) return @"iphone.homebutton.radiowaves.left.and.right"; // Edge gestures
