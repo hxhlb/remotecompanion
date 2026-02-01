@@ -724,17 +724,20 @@ static NSString *find_config_path() {
 static void load_trigger_config() {
     @autoreleasepool {
         // Find the config file
-        g_resolvedConfigPath = find_config_path();
+        NSString *path = find_config_path();
         
-        if (g_resolvedConfigPath) {
-            g_triggerConfig = [NSDictionary dictionaryWithContentsOfFile:g_resolvedConfigPath];
-            if (g_triggerConfig) {
+        if (path) {
+            NSDictionary *newConfig = [NSDictionary dictionaryWithContentsOfFile:path];
+            if (newConfig) {
+                // Thread-safe update: replace the pointer
+                g_triggerConfig = newConfig;
+                g_resolvedConfigPath = path;
                 SRLog(@"[SpringRemote] Loaded trigger config from %@: masterEnabled=%@, triggers=%lu",
-                      g_resolvedConfigPath,
+                      path,
                       g_triggerConfig[@"masterEnabled"],
                       (unsigned long)[g_triggerConfig[@"triggers"] count]);
             } else {
-                SRLog(@"[SpringRemote] Failed to parse config at %@", g_resolvedConfigPath);
+                SRLog(@"[SpringRemote] Failed to parse config at %@", path);
             }
         } else {
             SRLog(@"[SpringRemote] No trigger config found at shared path or in app containers");
@@ -751,10 +754,22 @@ static void update_edge_gestures();
 
 static void config_changed_callback(CFNotificationCenterRef center, void *observer,
                                     CFStringRef name, const void *object, CFDictionaryRef userInfo) {
-    SRLog(@"[SpringRemote] Config changed notification received, reloading...");
-    load_trigger_config();
-    update_simulation_observers();
-    update_edge_gestures(); // Dynamically add/remove gesture recognizers
+    SRLog(@"[SpringRemote] Config changed notification received.");
+    
+    // Ensure config loading and UI/Gesture updates happen on the main thread
+    dispatch_async(dispatch_get_main_queue(), ^{
+        @try {
+            SRLog(@"[SpringRemote] Reloading config on main thread...");
+            load_trigger_config();
+            SRLog(@"[SpringRemote] Config loaded. Updating simulation observers...");
+            update_simulation_observers();
+            SRLog(@"[SpringRemote] Simulation observers updated. Updating edge gestures...");
+            update_edge_gestures(); 
+            SRLog(@"[SpringRemote] Edge gestures updated. Config reload complete.");
+        } @catch (NSException *e) {
+            SRLog(@"[SpringRemote] CRITICAL ERROR in config_changed_callback: %@\nStack: %@", e, e.callStackSymbols);
+        }
+    });
 }
 
 static void register_config_observer() {
@@ -828,31 +843,35 @@ static void simulate_trigger_callback(CFNotificationCenterRef center, void *obse
 }
 
 static void update_simulation_observers() {
-    static NSMutableSet *g_registeredTriggers = nil;
-    if (!g_registeredTriggers) g_registeredTriggers = [[NSMutableSet alloc] init];
-    
-    if (!g_triggerConfig) load_trigger_config();
-    if (!g_triggerConfig) return;
-    
-    NSDictionary *triggers = g_triggerConfig[@"triggers"];
-    int count = 0;
-    for (NSString *key in triggers) {
-        if (![g_registeredTriggers containsObject:key]) {
-            NSString *notificationName = [NSString stringWithFormat:@"%s%@", kSimulateNotificationPrefix, key];
-            CFNotificationCenterAddObserver(
-                CFNotificationCenterGetDarwinNotifyCenter(),
-                NULL,
-                simulate_trigger_callback,
-                (__bridge CFStringRef)notificationName,
-                NULL,
-                CFNotificationSuspensionBehaviorDeliverImmediately
-            );
-            [g_registeredTriggers addObject:key];
-            count++;
+    @try {
+        static NSMutableSet *g_registeredTriggers = nil;
+        if (!g_registeredTriggers) g_registeredTriggers = [[NSMutableSet alloc] init];
+        
+        if (!g_triggerConfig) load_trigger_config();
+        if (!g_triggerConfig) return;
+        
+        NSDictionary *triggers = g_triggerConfig[@"triggers"];
+        int count = 0;
+        for (NSString *key in triggers) {
+            if (![g_registeredTriggers containsObject:key]) {
+                NSString *notificationName = [NSString stringWithFormat:@"%s%@", kSimulateNotificationPrefix, key];
+                CFNotificationCenterAddObserver(
+                    CFNotificationCenterGetDarwinNotifyCenter(),
+                    NULL,
+                    simulate_trigger_callback,
+                    (__bridge CFStringRef)notificationName,
+                    NULL,
+                    CFNotificationSuspensionBehaviorDeliverImmediately
+                );
+                [g_registeredTriggers addObject:key];
+                count++;
+            }
         }
-    }
-    if (count > 0) {
-        SRLog(@"Registered %d NEW simulation observers (Total: %lu)", count, (unsigned long)g_registeredTriggers.count);
+        if (count > 0) {
+            SRLog(@"Registered %d NEW simulation observers (Total: %lu)", count, (unsigned long)g_registeredTriggers.count);
+        }
+    } @catch (NSException *e) {
+         SRLog(@"[SpringRemote] ERROR in update_simulation_observers: %@", e);
     }
 }
 
@@ -3921,19 +3940,23 @@ static void unregister_edge_gestures() {
 
 // Update gesture registration based on config
 static void update_edge_gestures() {
-    BOOL shouldRegister = should_register_edge_gestures();
-    BOOL currentlyRegistered = (leftEdgeRecognizer != nil || rightEdgeRecognizer != nil);
-    
-    if (shouldRegister && !currentlyRegistered) {
-        SRLog(@"[SpringRemote] Edge gestures enabled - registering...");
-        register_edge_gestures();
-    } else if (!shouldRegister && currentlyRegistered) {
-        SRLog(@"[SpringRemote] Edge gestures disabled - unregistering...");
-        unregister_edge_gestures();
-    } else if (shouldRegister && currentlyRegistered) {
-        SRLog(@"[SpringRemote] Edge gestures already registered and should be");
-    } else {
-        SRLog(@"[SpringRemote] Edge gestures not needed and not registered");
+    @try {
+        BOOL shouldRegister = should_register_edge_gestures();
+        BOOL currentlyRegistered = (leftEdgeRecognizer != nil || rightEdgeRecognizer != nil);
+        
+        if (shouldRegister && !currentlyRegistered) {
+            SRLog(@"[SpringRemote] Edge gestures enabled - registering...");
+            register_edge_gestures();
+        } else if (!shouldRegister && currentlyRegistered) {
+            SRLog(@"[SpringRemote] Edge gestures disabled - unregistering...");
+            unregister_edge_gestures();
+        } else if (shouldRegister && currentlyRegistered) {
+            // SRLog(@"[SpringRemote] Edge gestures already registered and should be");
+        } else {
+            // SRLog(@"[SpringRemote] Edge gestures not needed and not registered");
+        }
+    } @catch (NSException *e) {
+        SRLog(@"[SpringRemote] ERROR in update_edge_gestures: %@", e);
     }
 }
 
