@@ -1,6 +1,6 @@
 # RemoteCompanion
 
-Control your jailbroken iPhone from anywhere. RemoteCompanion triggers media, apps, and system actions from your computer or directly from the RemoteCompanion app.
+RemoteCompanion is a modern Activator replacement built specifically for rootless jailbreaks. It lets you bind physical gestures and hardware buttons to system actions, media controls, and custom scripts.
 
 > [!NOTE] 
 > **What's New in v2.0**
