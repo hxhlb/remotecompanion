@@ -471,7 +471,11 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
         @"low power mode toggle": @"Low Power Mode Toggle",
         @"mute toggle": @"Mute Toggle",
         @"siri": @"Activate Siri",
-        @"home": @"Home Button"
+        @"home": @"Home Button",
+        @"ldrestart": @"Soft Reboot (ldrestart)",
+        @"userspace-reboot": @"Userspace Reboot",
+        @"uicache": @"Refresh Icon Cache",
+        @"player status": @"Player Status"
     };
     
     NSString *result = names[cmd];
@@ -607,7 +611,11 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
         @"anc transparency": @"waveform.circle.fill",
         @"airplay disconnect": @"airplayaudio.badge.exclamationmark",
         @"mute toggle": @"speaker.slash.fill",
-        @"siri": @"mic.circle.fill"
+        @"siri": @"mic.circle.fill",
+        @"ldrestart": @"arrow.clockwise",
+        @"userspace-reboot": @"arrow.clockwise.circle",
+        @"uicache": @"square.grid.2x2",
+        @"player status": @"play.circle.fill"
     };
     
     return icons[cmd] ?: @"circle.fill";
