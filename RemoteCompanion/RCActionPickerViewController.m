@@ -64,8 +64,7 @@
             @{ @"name": @"Next Track", @"command": @"next", @"icon": @"forward.fill" },
             @{ @"name": @"Previous Track", @"command": @"prev", @"icon": @"backward.fill" },
             @{ @"name": @"Play/Pause Toggle", @"command": @"playpause", @"icon": @"playpause.fill" },
-            @{ @"name": @"Volume Up", @"command": @"volume up", @"icon": @"speaker.wave.3.fill" },
-            @{ @"name": @"Volume Down", @"command": @"volume down", @"icon": @"speaker.wave.1.fill" }
+            @{ @"name": @"Volume Up", @"command": @"volume up", @"icon": @"speaker.wave.3.fill" }
         ],
         // Device Controls
         @[

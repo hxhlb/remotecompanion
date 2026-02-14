@@ -72,13 +72,11 @@
     // Load actions
     _actions = [[[RCConfigManager sharedManager] actionsForTrigger:_triggerKey] mutableCopy];
     
-    // Default to NOT editing to show clean UI
     self.tableView.editing = NO;
     self.navigationItem.rightBarButtonItems = @[addButton, self.editButtonItem];
-    
+
     [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"ActionCell"];
-    self.tableView.rowHeight = UITableViewAutomaticDimension;
-    self.tableView.estimatedRowHeight = 70;
+    self.tableView.rowHeight = 70; // Fixed height as in V2.1.2
 }
 
 - (void)renameTrigger {
@@ -577,58 +575,10 @@
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    static NSString *cellId = @"ActionCellCustom";
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellId];
-
-    UILabel *titleLabel;
-    UILabel *subtitleLabel;
-    UIImageView *iconView;
-
+    // Use Subtitle style
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"ActionCell"];
     if (!cell) {
-        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellId];
-        cell.contentView.clipsToBounds = YES;
-
-        iconView = [[UIImageView alloc] init];
-        iconView.tag = 100;
-        iconView.translatesAutoresizingMaskIntoConstraints = NO;
-        iconView.contentMode = UIViewContentModeScaleAspectFit;
-        [cell.contentView addSubview:iconView];
-
-        titleLabel = [[UILabel alloc] init];
-        titleLabel.tag = 101;
-        titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
-        titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightMedium];
-        titleLabel.textColor = [UIColor labelColor];
-        [cell.contentView addSubview:titleLabel];
-
-        subtitleLabel = [[UILabel alloc] init];
-        subtitleLabel.tag = 102;
-        subtitleLabel.translatesAutoresizingMaskIntoConstraints = NO;
-        subtitleLabel.font = [UIFont monospacedSystemFontOfSize:13 weight:UIFontWeightRegular];
-        subtitleLabel.textColor = [UIColor secondaryLabelColor];
-        subtitleLabel.numberOfLines = 0;
-        subtitleLabel.lineBreakMode = NSLineBreakByCharWrapping;
-        [cell.contentView addSubview:subtitleLabel];
-
-        [NSLayoutConstraint activateConstraints:@[
-            [iconView.leadingAnchor constraintEqualToAnchor:cell.contentView.leadingAnchor constant:16],
-            [iconView.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
-            [iconView.widthAnchor constraintEqualToConstant:28],
-            [iconView.heightAnchor constraintEqualToConstant:28],
-
-            [titleLabel.leadingAnchor constraintEqualToAnchor:iconView.trailingAnchor constant:12],
-            [titleLabel.trailingAnchor constraintEqualToAnchor:cell.contentView.trailingAnchor constant:-40],
-            [titleLabel.topAnchor constraintEqualToAnchor:cell.contentView.topAnchor constant:10],
-
-            [subtitleLabel.leadingAnchor constraintEqualToAnchor:titleLabel.leadingAnchor],
-            [subtitleLabel.trailingAnchor constraintEqualToAnchor:cell.contentView.trailingAnchor constant:-16],
-            [subtitleLabel.topAnchor constraintEqualToAnchor:titleLabel.bottomAnchor constant:4],
-            [subtitleLabel.bottomAnchor constraintEqualToAnchor:cell.contentView.bottomAnchor constant:-10]
-        ]];
-    } else {
-        iconView = [cell.contentView viewWithTag:100];
-        titleLabel = [cell.contentView viewWithTag:101];
-        subtitleLabel = [cell.contentView viewWithTag:102];
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"ActionCell"];
     }
 
     NSString *action = _actions[indexPath.row];
@@ -637,54 +587,74 @@
 
     // Logic to separate "Type" from "Value"
     if ([action hasPrefix:@"exec "]) {
-        titleLabel.text = @"Terminal Command";
+        cell.textLabel.text = @"Terminal Command";
         subtitle = [action substringFromIndex:5];
     } else if ([action hasPrefix:@"root "]) {
-        titleLabel.text = @"Root Command";
+        cell.textLabel.text = @"Root Command";
         subtitle = [action substringFromIndex:5];
     } else if ([action hasPrefix:@"Lua "] || [action hasPrefix:@"lua "]) {
-        titleLabel.text = @"Lua Script";
+        cell.textLabel.text = @"Lua Script";
         subtitle = [action hasPrefix:@"Lua "] ? [action substringFromIndex:4] : [action substringFromIndex:4];
     } else if ([action hasPrefix:@"delay "]) {
-        titleLabel.text = @"Wait";
+        cell.textLabel.text = [NSString stringWithFormat:@"Wait %@s", [action substringFromIndex:6]];
         subtitle = [NSString stringWithFormat:@"%@ seconds", [action substringFromIndex:6]];
     } else if ([action hasPrefix:@"shortcut:"]) {
-        titleLabel.text = cleanName;
+        cell.textLabel.text = cleanName;
         subtitle = @"Siri Shortcut";
     } else if ([action hasPrefix:@"uiopen "]) {
-        titleLabel.text = cleanName;
+        cell.textLabel.text = cleanName;
         subtitle = @"Application";
     } else if ([action hasPrefix:@"airplay connect "]) {
-        titleLabel.text = cleanName;
+        cell.textLabel.text = cleanName;
         subtitle = @"AirPlay Device";
     } else if ([action hasPrefix:@"bt connect "] || [action hasPrefix:@"bluetooth connect "]) {
-        titleLabel.text = cleanName;
+        cell.textLabel.text = cleanName;
         subtitle = @"Bluetooth Device";
     } else if ([action hasPrefix:@"bt disconnect "] || [action hasPrefix:@"bluetooth disconnect "]) {
-        titleLabel.text = cleanName;
+        cell.textLabel.text = cleanName;
         subtitle = nil;
     } else if ([action hasPrefix:@"airplay disconnect"]) {
-        titleLabel.text = cleanName;
+        cell.textLabel.text = cleanName;
+        subtitle = nil;
+    } else if ([action isEqualToString:@"ldrestart"] || [action isEqualToString:@"userspace-reboot"] || [action isEqualToString:@"uicache"] || [action isEqualToString:@"player status"]) {
+        cell.textLabel.text = cleanName;
         subtitle = nil;
     } else {
-        titleLabel.text = cleanName;
-        subtitle = action; // Show raw command
+        cell.textLabel.text = cleanName;
+        subtitle = nil;
     }
 
-    subtitleLabel.text = subtitle;
+    cell.textLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightMedium];
+    cell.textLabel.textColor = [UIColor labelColor];
+
+    if (subtitle) {
+        cell.detailTextLabel.text = subtitle;
+        cell.detailTextLabel.textColor = [UIColor secondaryLabelColor];
+
+        // Use monospace for code-like things
+        if ([action hasPrefix:@"exec "] || [action hasPrefix:@"root "] || [action hasPrefix:@"Lua "] || [action hasPrefix:@"lua "]) {
+            cell.detailTextLabel.font = [UIFont monospacedSystemFontOfSize:13 weight:UIFontWeightRegular];
+            cell.detailTextLabel.numberOfLines = 1;
+            cell.detailTextLabel.lineBreakMode = NSLineBreakByTruncatingMiddle;
+        } else {
+             cell.detailTextLabel.font = [UIFont systemFontOfSize:15];
+        }
+    } else {
+        cell.detailTextLabel.text = nil;
+    }
 
     NSString *iconName = [self iconForCommand:action];
     if ([iconName hasPrefix:@"USER_APP:"]) {
         NSString *bundleId = [iconName substringFromIndex:9];
-        iconView.image = [UIImage _applicationIconImageForBundleIdentifier:bundleId format:0 scale:[UIScreen mainScreen].scale];
-        iconView.tintColor = nil;
+        cell.imageView.image = [UIImage _applicationIconImageForBundleIdentifier:bundleId format:0 scale:[UIScreen mainScreen].scale];
+        cell.imageView.tintColor = nil;
     } else {
-        iconView.image = [UIImage systemImageNamed:iconName];
-        iconView.tintColor = [UIColor systemGrayColor];
+        cell.imageView.image = [UIImage systemImageNamed:iconName];
+        cell.imageView.tintColor = [UIColor systemGrayColor];
     }
 
     cell.showsReorderControl = YES;
-    
+
     return cell;
 }
 
