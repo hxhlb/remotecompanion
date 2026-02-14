@@ -4033,7 +4033,7 @@ static BOOL g_bottomBarHapticFired = NO;
             // Bottom bar: Check for horizontal swipe movement for haptic feedback
             if (g_bottomBarTouchActive && !g_bottomBarHapticFired) {
                 CGFloat deltaX = fabs(loc.x - g_bottomBarSwipeStartX);
-                if (deltaX > 30) {
+                if (deltaX > 15) { // Lowered from 30 to 15 for snappier feedback
                     trigger_haptic();
                     g_bottomBarHapticFired = YES;
                     SRLog(@"[SpringRemote] Bottom Bar Haptic FIRE (deltaX=%.2f)", deltaX);
@@ -4107,6 +4107,10 @@ static BOOL g_bottomBarHapticFired = NO;
             g_statusBarHoldTriggered = NO;
             g_pendingStatusBarTrigger = nil;
             g_statusBarTouchActive = NO;
+            
+            // Clean up bottom bar
+            g_bottomBarTouchActive = NO;
+            g_bottomBarHapticFired = NO;
         }
     }
     
