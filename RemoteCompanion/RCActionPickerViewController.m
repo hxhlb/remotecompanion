@@ -108,6 +108,17 @@
             @{ @"name": @"Userspace Reboot", @"command": @"userspace-reboot", @"icon": @"arrow.clockwise.circle" },
             @{ @"name": @"Refresh Icon Cache (uicache)", @"command": @"uicache", @"icon": @"square.grid.2x2" },
             @{ @"name": @"Lock Status", @"command": @"lock status", @"icon": @"lock.circle" },
+            @{ @"name": @"Haptics On", @"command": @"haptics on", @"icon": @"iphone.radiowaves.left.and.right" },
+            @{ @"name": @"Haptics Off", @"command": @"haptics off", @"icon": @"iphone.slash" },
+            @{ @"name": @"Haptics Toggle", @"command": @"haptics toggle", @"icon": @"iphone.badge.play" },
+            @{ @"name": @"Haptics Status", @"command": @"haptics status", @"icon": @"waveform.path.ecg" },
+            
+            // System Vibration
+            @{ @"name": @"Silent Vibrate Toggle", @"command": @"vibration silent-toggle", @"icon": @"bell.slash" },
+            @{ @"name": @"Silent Vibrate Status", @"command": @"vibration silent-status", @"icon": @"bell.slash.circle" },
+            @{ @"name": @"Ring Vibrate Toggle", @"command": @"vibration ring-toggle", @"icon": @"bell" },
+            @{ @"name": @"Ring Vibrate Status", @"command": @"vibration ring-status", @"icon": @"bell.circle" },
+
             @{ @"name": @"Low Power Mode On", @"command": @"low power on", @"icon": @"battery.25" },
             @{ @"name": @"Low Power Mode Off", @"command": @"low power off", @"icon": @"battery.100" },
             @{ @"name": @"Low Power Mode Toggle", @"command": @"low power toggle", @"icon": @"battery.25" },

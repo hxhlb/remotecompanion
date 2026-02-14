@@ -6,6 +6,7 @@
 #import <unistd.h>
 #include <arpa/inet.h>
 #import <spawn.h>
+#import <notify.h>
 #import <sys/wait.h>
 #import <objc/runtime.h>
 #import <dlfcn.h>
@@ -13,6 +14,11 @@
 #import <AVFoundation/AVFoundation.h>
 #import <mach/mach_time.h>
 #import "native_curl.h"
+#import <CoreFoundation/CoreFoundation.h>
+
+static void trigger_haptic();
+static void toggle_system_vibration(BOOL silentMode, BOOL enable);
+static BOOL get_system_vibration(BOOL silentMode);
 
 // WorkflowKit interfaces
 @interface WFWorkflowDescriptor : NSObject
@@ -595,6 +601,28 @@ static void inject_hid_event(uint32_t page, uint32_t usage, uint64_t durationNs,
     });
 }
 
+static void toggle_system_vibration(BOOL silentMode, BOOL enable) {
+    NSString *key = silentMode ? @"silent-vibrate" : @"ring-vibrate";
+    CFStringRef appID = CFSTR("com.apple.springboard");
+    
+    CFPreferencesSetAppValue((__bridge CFStringRef)key, (__bridge CFNumberRef)@(enable), appID);
+    CFPreferencesAppSynchronize(appID);
+    
+    // Notify SpringBoard to reload prefs
+    notify_post("com.apple.springboard.silent-vibrate.changed");
+    notify_post("com.apple.springboard.ring-vibrate.changed");
+    
+    SRLog(@"[SpringRemote] Set system vibration (%@) to: %@", key, enable ? @"YES" : @"NO");
+}
+
+static BOOL get_system_vibration(BOOL silentMode) {
+    NSString *key = silentMode ? @"silent-vibrate" : @"ring-vibrate";
+    Boolean valid;
+    Boolean val = CFPreferencesGetAppBooleanValue((__bridge CFStringRef)key, CFSTR("com.apple.springboard"), &valid);
+    if (!valid) return YES;
+    return val;
+}
+
 // Helper to detect rootless vs rootful
 static NSString* root_prefix() {
     static NSString *prefix = nil;
@@ -819,6 +847,17 @@ static void load_trigger_config() {
         }
     }
 }
+static void save_trigger_config(NSDictionary *config) {
+    NSString *path = g_resolvedConfigPath ?: kTriggerConfigPath;
+    [config writeToFile:path atomically:YES];
+    
+    // Post notification for app and tweak to reload
+    notify_post(kConfigChangedNotification);
+    
+    // Reload locally immediately
+    load_trigger_config();
+}
+
 static void update_simulation_observers();
 
 // Forward declarations for gesture management functions
@@ -1059,7 +1098,7 @@ static int lua_delay(lua_State *L) {
 
 // Lua binding: haptic()
 static int lua_haptic(lua_State *L) {
-    AudioServicesPlaySystemSound(1520);
+    trigger_haptic();
     return 0;
 }
 
@@ -2405,12 +2444,70 @@ static NSString *handle_command(NSString *cmd) {
         } else {
             return @"Error: AVSystemController not found\n";
         }    
+    } else if ([cleanCmd hasPrefix:@"haptics "]) {
+        NSString *subcheck = [cleanCmd substringFromIndex:8];
+        
+        NSMutableDictionary *mutableConfig = [g_triggerConfig mutableCopy];
+        if (!mutableConfig) mutableConfig = [NSMutableDictionary dictionary];
+
+        if ([subcheck isEqualToString:@"on"]) {
+            mutableConfig[@"hapticsEnabled"] = @YES;
+            save_trigger_config(mutableConfig);
+            return @"Haptics Enabled\n";
+        } else if ([subcheck isEqualToString:@"off"]) {
+            mutableConfig[@"hapticsEnabled"] = @NO;
+            save_trigger_config(mutableConfig);
+            return @"Haptics Disabled\n";
+        } else if ([subcheck isEqualToString:@"toggle"]) {
+            BOOL current = [mutableConfig[@"hapticsEnabled"] boolValue];
+            mutableConfig[@"hapticsEnabled"] = @(!current);
+            save_trigger_config(mutableConfig);
+            return current ? @"Haptics Disabled\n" : @"Haptics Enabled\n";
+        } else if ([subcheck isEqualToString:@"status"]) {
+            BOOL current = [g_triggerConfig[@"hapticsEnabled"] boolValue];
+            return current ? @"Haptics: ON\n" : @"Haptics: OFF\n";
+        }
+    } else if ([cleanCmd hasPrefix:@"vibration "]) {
+        NSString *subcheck = [cleanCmd substringFromIndex:10];
+        
+        // Silent Mode Vibration
+        if ([subcheck isEqualToString:@"silent-on"]) {
+            toggle_system_vibration(YES, YES);
+            return @"Silent Vibrate: ON\n";
+        } else if ([subcheck isEqualToString:@"silent-off"]) {
+            toggle_system_vibration(YES, NO);
+            return @"Silent Vibrate: OFF\n";
+        } else if ([subcheck isEqualToString:@"silent-toggle"]) {
+            BOOL current = get_system_vibration(YES);
+            toggle_system_vibration(YES, !current);
+            return current ? @"Silent Vibrate: OFF\n" : @"Silent Vibrate: ON\n";
+        } else if ([subcheck isEqualToString:@"silent-status"]) {
+             BOOL current = get_system_vibration(YES);
+             return current ? @"Silent Vibrate: ON\n" : @"Silent Vibrate: OFF\n";
+        }
+        
+        // Ring Mode Vibration
+        else if ([subcheck isEqualToString:@"ring-on"]) {
+            toggle_system_vibration(NO, YES);
+            return @"Ring Vibrate: ON\n";
+        } else if ([subcheck isEqualToString:@"ring-off"]) {
+            toggle_system_vibration(NO, NO);
+            return @"Ring Vibrate: OFF\n";
+        } else if ([subcheck isEqualToString:@"ring-toggle"]) {
+            BOOL current = get_system_vibration(NO);
+            toggle_system_vibration(NO, !current);
+            return current ? @"Ring Vibrate: OFF\n" : @"Ring Vibrate: ON\n";
+        } else if ([subcheck isEqualToString:@"ring-status"]) {
+             BOOL current = get_system_vibration(NO);
+             return current ? @"Ring Vibrate: ON\n" : @"Ring Vibrate: OFF\n";
+        }
     } else if ([cleanCmd isEqualToString:@"haptic"]) {
         // Haptic feedback using UIImpactFeedbackGenerator
         dispatch_async(dispatch_get_main_queue(), ^{
-            UIImpactFeedbackGenerator *generator = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
-            [generator prepare];
-            [generator impactOccurred];
+            // Respect global setting for this manual command too? 
+            // The user might want this to FORCE a haptic, but let's respect the setting for consistency unless it's a "test".
+            // Actually, "haptic" command is often used for testing. Let's make it respect the setting via trigger_haptic()
+            trigger_haptic();
         });
         NSLog(@"[RemoteCommand] Haptic triggered");
     } else if ([cleanCmd isEqualToString:@"flash-on"] || [cleanCmd isEqualToString:@"flash on"]) {
@@ -3030,7 +3127,12 @@ static BOOL g_bioWasLocked = NO;
 
 
 // Helper to trigger haptic feedback
+// Helper to trigger haptic feedback
 static void trigger_haptic() {
+    load_trigger_config();
+    if (g_triggerConfig[@"hapticsEnabled"] && ![g_triggerConfig[@"hapticsEnabled"] boolValue]) {
+        return; // Haptics disabled globally
+    }
     AudioServicesPlaySystemSound(1520);
 }
 
@@ -4239,7 +4341,7 @@ static BOOL g_bottomBarHapticFired = NO;
                 
                 if (enabled) {
                     // Haptic feedback ONLY if enabled
-                    AudioServicesPlaySystemSound(1520);
+                    trigger_haptic();
                     RCExecuteTrigger(triggerKey);
                     SRLog(@"[SpringRemote] %@ FIRED INSTANTLY!", triggerKey);
                 } else {

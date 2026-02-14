@@ -99,6 +99,12 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
             _config[@"nfcEnabled"] = @YES;
             [self saveConfig];
         }
+
+        // Auto-add hapticsEnabled if missing
+        if (_config[@"hapticsEnabled"] == nil) {
+            _config[@"hapticsEnabled"] = @YES;
+            [self saveConfig];
+        }
     } else {
         // Default config with all triggers
         NSLog(@"[RCConfigManager] Using default config");
@@ -175,6 +181,19 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
     if (!nfcEnabled) {
         [self stopBackgroundNFC];
     }
+    [self saveConfig];
+}
+
+- (BOOL)hapticsEnabled {
+    // Default to YES if missing
+    if (!_config[@"hapticsEnabled"]) {
+        return YES;
+    }
+    return [_config[@"hapticsEnabled"] boolValue];
+}
+
+- (void)setHapticsEnabled:(BOOL)hapticsEnabled {
+    _config[@"hapticsEnabled"] = @(hapticsEnabled);
     [self saveConfig];
 }
 
