@@ -8,4 +8,7 @@
 @property (nonatomic, copy) NSString *initialText;
 @property (nonatomic, copy) void (^onComplete)(NSString *text);
 
+@property (nonatomic, assign) BOOL showRootToggle;
+@property (nonatomic, assign) BOOL isRootToggled;
+
 @end

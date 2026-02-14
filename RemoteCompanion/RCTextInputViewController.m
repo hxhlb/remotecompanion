@@ -1,7 +1,9 @@
 #import "RCTextInputViewController.h"
 
 @interface RCTextInputViewController () <UITextViewDelegate>
+
 @property (nonatomic, strong) UITextView *textView;
+@property (nonatomic, strong) UISwitch *rootSwitch;
 @end
 
 @implementation RCTextInputViewController
@@ -50,12 +52,50 @@
         _textView.text = _initialText;
     }
     
-    [NSLayoutConstraint activateConstraints:@[
-        [_textView.topAnchor constraintEqualToAnchor:self.view.topAnchor],
-        [_textView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
-        [_textView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-        [_textView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor]
-    ]];
+    if (self.showRootToggle) {
+        // Create container for toggle
+        UIView *toggleContainer = [[UIView alloc] init];
+        toggleContainer.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
+        toggleContainer.translatesAutoresizingMaskIntoConstraints = NO;
+        [self.view addSubview:toggleContainer];
+        
+        UILabel *rootLabel = [[UILabel alloc] init];
+        rootLabel.text = @"Execute as Root";
+        rootLabel.font = [UIFont systemFontOfSize:17];
+        rootLabel.translatesAutoresizingMaskIntoConstraints = NO;
+        [toggleContainer addSubview:rootLabel];
+        
+        self.rootSwitch = [[UISwitch alloc] init];
+        self.rootSwitch.translatesAutoresizingMaskIntoConstraints = NO;
+        [self.rootSwitch addTarget:self action:@selector(rootSwitchChanged:) forControlEvents:UIControlEventValueChanged];
+        self.rootSwitch.on = self.isRootToggled;
+        [toggleContainer addSubview:self.rootSwitch];
+        
+        [NSLayoutConstraint activateConstraints:@[
+            [toggleContainer.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor],
+            [toggleContainer.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+            [toggleContainer.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+            [toggleContainer.heightAnchor constraintEqualToConstant:50],
+            
+            [rootLabel.leadingAnchor constraintEqualToAnchor:toggleContainer.leadingAnchor constant:20],
+            [rootLabel.centerYAnchor constraintEqualToAnchor:toggleContainer.centerYAnchor],
+            
+            [self.rootSwitch.trailingAnchor constraintEqualToAnchor:toggleContainer.trailingAnchor constant:-20],
+            [self.rootSwitch.centerYAnchor constraintEqualToAnchor:toggleContainer.centerYAnchor],
+            
+            [_textView.topAnchor constraintEqualToAnchor:toggleContainer.bottomAnchor],
+            [_textView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+            [_textView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+            [_textView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor]
+        ]];
+    } else {
+        [NSLayoutConstraint activateConstraints:@[
+            [_textView.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor],
+            [_textView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+            [_textView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+            [_textView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor]
+        ]];
+    }
 }
 
 - (void)viewDidAppear:(BOOL)animated {
@@ -67,8 +107,16 @@
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
+- (void)rootSwitchChanged:(UISwitch *)sender {
+    self.isRootToggled = sender.isOn;
+}
+
 - (void)save {
     NSString *text = [_textView.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (_showRootToggle) {
+        self.isRootToggled = self.rootSwitch.isOn;
+    }
+    
     if (_onComplete) {
         _onComplete(text);
     }

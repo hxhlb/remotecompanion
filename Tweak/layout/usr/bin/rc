@@ -72,9 +72,10 @@ if [[ "$1" == "notify" ]]; then
 fi
 
 if [ -z "$1" ]; then
-    echo "Usage: rc <command> [arg]"
+    echo "Usage: rc [-r] <command> [arg]"
     echo ""
     echo "Implemented Commands:"
+    echo "  -r, --root        - Run command as root"
     echo "  play, pause       - Media Control"
     echo "  vol-up, vol-down  - Volume Control"
     echo "  set-vol <0-100>   - Set Volume"

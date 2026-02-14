@@ -134,10 +134,14 @@
             // Show custom text input for command
             RCTextInputViewController *inputVC = [[RCTextInputViewController alloc] init];
             inputVC.promptTitle = @"Terminal Command";
-            inputVC.promptMessage = @"Enter terminal command (runs as mobile user)";
+            inputVC.promptMessage = @"Enter terminal command";
+            inputVC.showRootToggle = YES;
+            
+            __weak typeof(inputVC) weakInputVC = inputVC;
             inputVC.onComplete = ^(NSString *text) {
                 if (text.length > 0) {
-                    [self.actions addObject:[NSString stringWithFormat:@"exec %@", text]];
+                    NSString *prefix = weakInputVC.isRootToggled ? @"root" : @"exec";
+                    [self.actions addObject:[NSString stringWithFormat:@"%@ %@", prefix, text]];
                     [self saveActions];
                     [self.tableView reloadData];
                 }
