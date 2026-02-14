@@ -638,7 +638,19 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
         @"ldrestart": @"arrow.clockwise",
         @"userspace-reboot": @"arrow.clockwise.circle",
         @"uicache": @"square.grid.2x2",
-        @"player status": @"play.circle.fill"
+        @"player status": @"play.circle.fill",
+        @"haptics on": @"iphone.radiowaves.left.and.right",
+        @"haptics off": @"iphone.slash",
+        @"haptics toggle": @"iphone.badge.play",
+        @"haptics status": @"waveform.path.ecg",
+        @"vibration silent-on": @"bell.slash",
+        @"vibration silent-off": @"bell.slash",
+        @"vibration silent-toggle": @"bell.slash",
+        @"vibration silent-status": @"bell.slash.circle",
+        @"vibration ring-on": @"bell",
+        @"vibration ring-off": @"bell",
+        @"vibration ring-toggle": @"bell",
+        @"vibration ring-status": @"bell.circle"
     };
     
     return icons[cmd] ?: @"circle.fill";

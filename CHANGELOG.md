@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 - **New System Actions**: Added `ldrestart`, `userspace-reboot`, and `uicache` as first-class selectable actions in the app for quick system maintenance.
 - **Bottom Bar Gestures**: Added new "Bottom Bar Swipe Left" and "Bottom Bar Swipe Right" triggers, allowing you to run actions by swiping horizontally along the home bar area.
 - **Global Haptics Toggle**: You can now enable, disable, or toggle all system vibrations from the app or CLI (`rc haptics off`). Perfect for silent operation.
-- **System Vibration Control**: New `rc vibration` command to toggle the system-wide "Vibrate on Silent" and "Vibrate on Ring" settings directly from the CLI or Action Picker.
+- **System Vibration Control**: New `rc vibration` command to toggle the system-wide "Vibrate on Silent" and "Vibrate on Ring" settings directly from the CLI or Action Picker. Added status commands for CLI usage.
 
 ### Improved
 - **Modern Terminal UI**: Redesigned the terminal input screen with a "pro" console aesthetic. Features a near-black, high-contrast text area with rounded corners and monospaced typography.

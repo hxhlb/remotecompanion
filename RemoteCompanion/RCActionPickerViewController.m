@@ -115,9 +115,7 @@
             
             // System Vibration
             @{ @"name": @"Silent Vibrate Toggle", @"command": @"vibration silent-toggle", @"icon": @"bell.slash" },
-            @{ @"name": @"Silent Vibrate Status", @"command": @"vibration silent-status", @"icon": @"bell.slash.circle" },
             @{ @"name": @"Ring Vibrate Toggle", @"command": @"vibration ring-toggle", @"icon": @"bell" },
-            @{ @"name": @"Ring Vibrate Status", @"command": @"vibration ring-status", @"icon": @"bell.circle" },
 
             @{ @"name": @"Low Power Mode On", @"command": @"low power on", @"icon": @"battery.25" },
             @{ @"name": @"Low Power Mode Off", @"command": @"low power off", @"icon": @"battery.100" },

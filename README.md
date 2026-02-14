@@ -56,6 +56,7 @@ RemoteCompanion brings fast, scriptable system control to modern rootless jailbr
 - `rc haptic` / `rc screenshot`
 - `rc haptics [on|off|toggle|status]` - Global haptics control (internal).
 - `rc vibration [silent-toggle|ring-toggle]` - System "Vibrate on Silent/Ring" settings.
+- `rc vibration [silent-status|ring-status]` - Check current system vibration state (CLI only).
 
 ### Apps & Shortcuts
 - `rc open <alias|bundleID>` (e.g., `youtube`, `spotify`, `settings`, `messages`, `home`, `photos`, `camera`, `clock`, `maps`, `calendar`, `weather`, `notes`, `reminders`, `appstore`, `mail`, `music`, `phone`, `stocks`, `calculator`, `tv`, `wallet`, `facetime`, `files`).
