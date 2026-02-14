@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - **Action Favorites**: You can now mark any system command, app, or shortcut as a "Favorite" for lightning-fast access at the top of the picker.
 - **Enhanced Status Queries**: Added a suite of new status commands to query device state without toggling. Use `rc dnd status`, `rc lpm status`, `rc wifi status`, `rc bt status`, and the restored `rc player status` command to get instant feedback.
 - **CLI Root Support**: The `rc` command-line tool now supports `-r` and `--root` flags to quickly fire off root commands from your Mac (e.g., `rc -r ldrestart`).
+- **New System Actions**: Added `ldrestart`, `userspace-reboot`, and `uicache` as first-class selectable actions in the app for quick system maintenance.
 
 ### Improved
 - **Modern Terminal UI**: Redesigned the terminal input screen with a "pro" console aesthetic. Features a near-black, high-contrast text area with rounded corners and monospaced typography.
