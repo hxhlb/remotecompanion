@@ -65,10 +65,10 @@ Architecture: iphoneos-arm64
 Version: 2.2.0~beta1
 Installed-Size: 1536
 Filename: ./com.saihgupr.remotecompanion_2.2.0~beta1_iphoneos-arm64.deb
-Size: 294748
-MD5sum: 312d822bb3b53372b8c38459a6762f7b
-SHA1: 8c55f4334b99f3300e30a8b175a6928c8800a415
-SHA256: 45affd1e2ce56b936bd5c401c7cb5aa5cfc0e6884d4b86f87a72a5861d012369
+Size: 295040
+MD5sum: bdc0f59c8d6f0100ef5d5c9122c7a53b
+SHA1: 6e162eac6d81a029a41d2befbd7120ba2f5bf360
+SHA256: 0fcc02708f8154eb77d8eed6161b7d1a81e577d876e074ffd3123383b17f4555
 
 Package: com.saihgupr.remotecompanion
 Name: RemoteCompanion
@@ -173,10 +173,10 @@ Architecture: iphoneos-arm
 Version: 2.2.0~beta1
 Installed-Size: 1536
 Filename: ./com.saihgupr.remotecompanion_2.2.0~beta1_iphoneos-arm.deb
-Size: 294590
-MD5sum: 7fa3845b0a18961d03e2203677dd5fe9
-SHA1: 62b7cd6f84c858374b03e9e472bb3188e64ede90
-SHA256: 14bbc58edb50af22043b57266292cc914b1867a2b566d98c8cb10ac4f8fe7fd5
+Size: 295064
+MD5sum: 417881c45df561c2c7b9237f0c0bbde6
+SHA1: 30b0a7ad6503a2a8cecad6499f53a2d544724985
+SHA256: 6b1fb42e3b434244b0fad9c2a3ae266136cb45e502352cb8b62c3c17e0550e23
 
 Package: com.saihgupr.remotecompanion
 Name: RemoteCompanion

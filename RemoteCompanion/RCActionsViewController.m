@@ -290,17 +290,23 @@
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     NSString *currentAction = self.actions[indexPath.row];
     
-    if ([currentAction hasPrefix:@"exec "]) {
-        // Edit Custom Command
+    if ([currentAction hasPrefix:@"exec "] || [currentAction hasPrefix:@"root "]) {
+        // Edit Terminal Command
+        BOOL isRoot = [currentAction hasPrefix:@"root "];
         NSString *currentCommand = [currentAction substringFromIndex:5];
         
         RCTextInputViewController *inputVC = [[RCTextInputViewController alloc] init];
         inputVC.promptTitle = @"Edit Command";
         inputVC.promptMessage = @"Update your terminal command";
         inputVC.initialText = currentCommand;
+        inputVC.showRootToggle = YES;
+        inputVC.isRootToggled = isRoot;
+        
+        __weak typeof(inputVC) weakInputVC = inputVC;
         inputVC.onComplete = ^(NSString *text) {
             if (text.length > 0) {
-                self.actions[indexPath.row] = [NSString stringWithFormat:@"exec %@", text];
+                NSString *prefix = weakInputVC.isRootToggled ? @"root" : @"exec";
+                self.actions[indexPath.row] = [NSString stringWithFormat:@"%@ %@", prefix, text];
                 [self saveActions];
                 [self.tableView reloadData];
             }
@@ -363,24 +369,7 @@
         
         UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:inputVC];
         [self presentViewController:nav animated:YES completion:nil];
-    } else if ([currentAction hasPrefix:@"root "]) {
-        // Edit Root Command
-        NSString *currentCommand = [currentAction substringFromIndex:5];
 
-        RCTextInputViewController *inputVC = [[RCTextInputViewController alloc] init];
-        inputVC.promptTitle = @"Edit Root Command";
-        inputVC.promptMessage = @"Update your terminal command (runs as root)";
-        inputVC.initialText = currentCommand;
-        inputVC.onComplete = ^(NSString *text) {
-            if (text.length > 0) {
-                self.actions[indexPath.row] = [NSString stringWithFormat:@"root %@", text];
-                [self saveActions];
-                [self.tableView reloadData];
-            }
-        };
-
-        UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:inputVC];
-        [self presentViewController:nav animated:YES completion:nil];
     } else if ([currentAction hasPrefix:@"delay "]) {
         // Edit Delay
         NSString *currentDelay = [currentAction substringFromIndex:6];
