@@ -201,6 +201,7 @@ extern Boolean MRMediaRemoteSendCommandToApp(MRMediaRemoteCommand command, NSDic
 - (BOOL)enabled;
 - (void)setEnabled:(BOOL)enabled;
 - (void)setPowered:(BOOL)powered;
+- (BOOL)powered;
 - (NSArray *)pairedDevices;
 - (void)connectDevice:(id)device;
 @end
@@ -232,6 +233,7 @@ extern Boolean MRMediaRemoteSendCommandToApp(MRMediaRemoteCommand command, NSDic
 @interface SBWiFiManager : NSObject
 + (instancetype)sharedInstance;
 - (void)setWiFiEnabled:(BOOL)enabled;
+- (BOOL)wiFiEnabled;
 @end
 
 // MediaRemote APIs - these are stable and work on iOS 15.8
@@ -245,6 +247,7 @@ typedef enum {
 
 extern void MRMediaRemoteSendCommand(MRCommand command, NSDictionary *options);
 extern void MRMediaRemoteGetNowPlayingApplicationIsPlaying(dispatch_queue_t queue, void (^completion)(Boolean isPlaying));
+extern void MRMediaRemoteGetNowPlayingApplicationPlaybackState(dispatch_queue_t queue, void (^completion)(unsigned int state));
 
 // AVOutputDevice for ANC control (used by Sonitus)
 @interface AVOutputDevice : NSObject
@@ -1185,6 +1188,30 @@ static NSString *handle_command(NSString *cmd) {
         });
         
         return @"Dumping generic media state to logs...\n";
+    } else if ([cleanCmd isEqualToString:@"is-playing"] || [cleanCmd isEqualToString:@"player status"]) {
+        __block NSString *status = @"Unknown";
+        dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+        
+        MRMediaRemoteGetNowPlayingApplicationPlaybackState(dispatch_get_main_queue(), ^(unsigned int state) {
+            switch (state) {
+                case 0: status = @"Unknown"; break;
+                case 1: status = @"Playing"; break;
+                case 2: status = @"Paused"; break;
+                case 3: status = @"Stopped"; break;
+                case 4: status = @"Interrupted"; break;
+                case 5: status = @"Seeking Forward"; break;
+                case 6: status = @"Seeking Backward"; break;
+                default: status = [NSString stringWithFormat:@"Other (%u)", state]; break;
+            }
+            dispatch_semaphore_signal(sema);
+        });
+        
+        dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)));
+        
+        if ([cleanCmd isEqualToString:@"is-playing"]) {
+            return [status isEqualToString:@"Playing"] ? @"YES\n" : @"NO\n";
+        }
+        return [NSString stringWithFormat:@"%@\n", status];
     } else if ([cleanCmd isEqualToString:@"next"]) {
         MRMediaRemoteSendCommand(kMRNextTrack, nil);
     } else if ([cleanCmd isEqualToString:@"prev"]) {
@@ -1892,6 +1919,9 @@ static NSString *handle_command(NSString *cmd) {
         } else if ([subCmd isEqualToString:@"off"]) {
             toggle_dnd(NO);
             return @"DND Disabled\n";
+        } else if ([subCmd isEqualToString:@"status"]) {
+            BOOL current = get_dnd_state();
+            return current ? @"DND ON\n" : @"DND OFF\n";
         } else if ([subCmd isEqualToString:@"toggle"]) {
             BOOL current = get_dnd_state();
             toggle_dnd(!current);
@@ -1905,6 +1935,9 @@ static NSString *handle_command(NSString *cmd) {
         } else if ([subCmd isEqualToString:@"off"]) {
             toggle_lpm(NO);
             return @"Low Power Mode Disabled\n";
+        } else if ([subCmd isEqualToString:@"status"]) {
+            BOOL current = get_lpm_state();
+            return current ? @"Low Power Mode ON\n" : @"Low Power Mode OFF\n";
         } else if ([subCmd isEqualToString:@"toggle"]) {
             BOOL current = get_lpm_state();
             toggle_lpm(!current);
@@ -1918,6 +1951,9 @@ static NSString *handle_command(NSString *cmd) {
         } else if ([subCmd isEqualToString:@"off"]) {
             toggle_lpm(NO);
             return @"Low Power Mode Disabled\n";
+        } else if ([subCmd isEqualToString:@"status"]) {
+            BOOL current = get_lpm_state();
+            return current ? @"Low Power Mode ON\n" : @"Low Power Mode OFF\n";
         } else if ([subCmd isEqualToString:@"toggle"]) {
             BOOL current = get_lpm_state();
             toggle_lpm(!current);
@@ -1931,6 +1967,9 @@ static NSString *handle_command(NSString *cmd) {
         } else if ([subCmd isEqualToString:@"off"]) {
             toggle_lpm(NO);
             return @"Low Power Mode Disabled\n";
+        } else if ([subCmd isEqualToString:@"status"]) {
+            BOOL current = get_lpm_state();
+            return current ? @"Low Power Mode ON\n" : @"Low Power Mode OFF\n";
         } else if ([subCmd isEqualToString:@"toggle"]) {
             BOOL current = get_lpm_state();
             toggle_lpm(!current);
@@ -1938,23 +1977,42 @@ static NSString *handle_command(NSString *cmd) {
         }
     } else if ([cleanCmd isEqualToString:@"orientation lock"] || [cleanCmd isEqualToString:@"orientation"] || [cleanCmd isEqualToString:@"rotation"] || [cleanCmd isEqualToString:@"rotate"]) {
         return handle_command(@"orientation toggle");
-    } else if ([cleanCmd hasPrefix:@"orientation "] || [cleanCmd hasPrefix:@"rotation "] || [cleanCmd hasPrefix:@"rotate "]) {
-        NSString *subCmd = [[cleanCmd componentsSeparatedByString:@" "] lastObject];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            Class managerClass = objc_getClass("SBOrientationLockManager");
-            if (managerClass) {
-                id manager = [managerClass sharedInstance];
-                if ([subCmd isEqualToString:@"on"] || [subCmd isEqualToString:@"lock"]) {
-                    [manager lock];
-                } else if ([subCmd isEqualToString:@"off"] || [subCmd isEqualToString:@"unlock"]) {
-                    [manager unlock];
-                } else if ([subCmd isEqualToString:@"toggle"]) {
-                    if ([manager isUserLocked]) [manager unlock];
-                    else [manager lock];
-                }
+    } else if ([cleanCmd hasPrefix:@"rotate "]) {
+        NSString *arg = [[cleanCmd substringFromIndex:7] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        
+        __block NSString *result = nil;
+        void (^rotateBlock)(void) = ^{
+            SBOrientationLockManager *manager = [objc_getClass("SBOrientationLockManager") sharedInstance];
+            if ([arg isEqualToString:@"lock"]) {
+                [manager lock];
+                result = @"Orientation Locked\n";
+            } else if ([arg isEqualToString:@"unlock"]) {
+                [manager unlock];
+                result = @"Orientation Unlocked\n";
+            } else if ([arg isEqualToString:@"toggle"]) {
+                if ([manager isUserLocked]) [manager unlock];
+                else [manager lock];
+                result = [NSString stringWithFormat:@"Orientation %@\n", ![manager isUserLocked] ? @"Locked" : @"Unlocked"];
+            } else {
+                BOOL isLocked = [manager isUserLocked];
+                result = [NSString stringWithFormat:@"Orientation Lock Status: %@\n", isLocked ? @"Locked" : @"Unlocked"];
             }
-        });
-        return @"OK\n";
+        };
+        
+        if ([NSThread isMainThread]) rotateBlock();
+        else dispatch_sync(dispatch_get_main_queue(), rotateBlock);
+        return result;
+    } else if ([cleanCmd isEqualToString:@"rotate"]) {
+         __block NSString *result = nil;
+         void (^statusBlock)(void) = ^{
+             SBOrientationLockManager *manager = [objc_getClass("SBOrientationLockManager") sharedInstance];
+             BOOL isLocked = [manager isUserLocked];
+             result = [NSString stringWithFormat:@"Orientation Lock Status: %@\n", isLocked ? @"Locked" : @"Unlocked"];
+         };
+         
+         if ([NSThread isMainThread]) statusBlock();
+         else dispatch_sync(dispatch_get_main_queue(), statusBlock);
+         return result;
     } else if ([cleanCmd isEqualToString:@"mute"]) {
         return @"Usage: rc mute [on|off|status]\n";
     } else if ([cleanCmd hasPrefix:@"mute "]) {
@@ -2165,6 +2223,17 @@ static NSString *handle_command(NSString *cmd) {
             }
         }
         return @"Error: BluetoothManager not found\n";
+    } else if ([cleanCmd isEqualToString:@"bluetooth status"] || [cleanCmd isEqualToString:@"bt status"]) {
+        void *btHandle = dlopen("/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager", RTLD_NOW);
+        if (btHandle) {
+            Class BluetoothManagerClass = objc_getClass("BluetoothManager");
+            if (BluetoothManagerClass) {
+                BluetoothManager *btManager = [BluetoothManagerClass sharedInstance];
+                BOOL isPowered = [btManager powered];
+                return [NSString stringWithFormat:@"Bluetooth %@\n", isPowered ? @"ON" : @"OFF"];
+            }
+        }
+        return @"Error: BluetoothManager not found\n";
     } else if ([cleanCmd isEqualToString:@"bluetooth-off"] || [cleanCmd isEqualToString:@"bt-off"] || [cleanCmd isEqualToString:@"bluetooth off"] || [cleanCmd isEqualToString:@"bt off"]) {
         void *btHandle = dlopen("/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager", RTLD_NOW);
         if (btHandle) {
@@ -2244,6 +2313,13 @@ static NSString *handle_command(NSString *cmd) {
             return @"WiFi Enabled\n";
         }
         return @"Error: SBWiFiManager not found\n";
+    } else if ([cleanCmd isEqualToString:@"wifi status"] || [cleanCmd isEqualToString:@"wi status"]) {
+        SBWiFiManager *manager = [objc_getClass("SBWiFiManager") sharedInstance];
+        if (manager) {
+            BOOL isEnabled = [manager wiFiEnabled];
+            return [NSString stringWithFormat:@"WiFi %@\n", isEnabled ? @"ON" : @"OFF"];
+        }
+        return @"Error: SBWiFiManager not found\n";
     } else if ([cleanCmd isEqualToString:@"wifi-off"] || [cleanCmd isEqualToString:@"wi-off"] || [cleanCmd isEqualToString:@"wifi off"]) {
         SBWiFiManager *manager = [objc_getClass("SBWiFiManager") sharedInstance];
         if (manager) {
@@ -2288,6 +2364,15 @@ static NSString *handle_command(NSString *cmd) {
             SRLog(@"[SpringRemote] Airplane Mode Toggled: %d -> %d", current, !current);
             return [NSString stringWithFormat:@"Airplane Mode Toggled: %@\n", !current ? @"ON" : @"OFF"];
         }
+    } else if ([cleanCmd isEqualToString:@"airplane status"]) {
+        dlopen("/System/Library/PrivateFrameworks/AppSupport.framework/AppSupport", RTLD_NOW);
+        Class RPClass = objc_getClass("RadiosPreferences");
+        if (RPClass) {
+            RadiosPreferences *prefs = [[RPClass alloc] init];
+            BOOL current = [prefs airplaneMode];
+            return [NSString stringWithFormat:@"Airplane Mode %@\n", current ? @"ON" : @"OFF"];
+        }
+        return @"Error: RadiosPreferences not found\n";
     } else if ([cleanCmd hasPrefix:@"brightness "]) {
         // Set screen brightness (0-100) using BackBoardServices
         NSString *valueStr = [[cleanCmd substringFromIndex:11] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
@@ -2373,6 +2458,12 @@ static NSString *handle_command(NSString *cmd) {
             [device setTorchMode:AVCaptureTorchModeOff];
             [device unlockForConfiguration];
         }
+    } else if ([cleanCmd isEqualToString:@"flashlight status"]) {
+        AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+        if ([device hasTorch]) {
+            return [NSString stringWithFormat:@"Flashlight %@\n", [device torchMode] == AVCaptureTorchModeOn ? @"ON" : @"OFF"];
+        }
+        return @"Error: Flashlight not found\n";
     } else if ([cleanCmd hasPrefix:@"kill "]) {
         NSString *arg = [[cleanCmd substringFromIndex:5] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         NSString *bundleID = resolve_bundle_id(arg);

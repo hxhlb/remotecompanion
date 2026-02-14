@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **Root Execution Toggle**: Terminal commands now feature a native "Execute as Root" toggle directly in the editor. No more separate menu items; just toggle it on for system-level actions.
 - **Action Favorites**: You can now mark any system command, app, or shortcut as a "Favorite" for lightning-fast access at the top of the picker.
+- **Enhanced Status Queries**: Added a suite of new status commands to query device state without toggling. Use `rc dnd status`, `rc lpm status`, `rc wifi status`, `rc bt status`, and the restored `rc player status` command to get instant feedback.
 - **CLI Root Support**: The `rc` command-line tool now supports `-r` and `--root` flags to quickly fire off root commands from your Mac (e.g., `rc -r ldrestart`).
 
 ### Improved

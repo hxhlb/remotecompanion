@@ -3,15 +3,12 @@
 RemoteCompanion brings fast, scriptable system control to modern rootless jailbreaks. It lets you bind physical gestures and hardware buttons to system actions, media controls, and custom scripts.
 
 > [!IMPORTANT]
-> **What's New in v2.1**
-> - **iOS 14 & Rootful Support**: Broader compatibility covering legacy firmware and rootful jailbreak environments.
-> - **Unified Device Pickers**: Discovery-based, searchable live lists for nearby AirPlay and Bluetooth hardware.
-> - **Action Editing**: Modify any existing action in your sequence by simply tapping it.
-> - **Port Change & Speed**: Default TCP port moved to `12340` with optimized local probes for instant (~0.25s) execution.
-> - **iPad Experience**: Official support for iPads with full landscape orientation and optimized layouts.
-> - **Home Button**: Native simulation of the Home button for all device models (physical and gesture-based).
-> - **Modern Code Editor**: Completely redesigned, edge-to-edge UI with iOS 17 aesthetics.
-> - **True Multitasking**: Concurrent server handling powered by GCD—zero battery drain, zero blocking.
+> **What's New in v2.2**
+> - **Run as Root**: Native root toggle in the command editor and new CLI support (`rc -r`) for system-level actions.
+> - **Action Favorites**: Mark any app, shortcut, or command as a favorite for instant access at the top of the picker.
+> - **Device Status Queries**: Instantly poll device state from the CLI. Includes DND, Low Power Mode, WiFi, Bluetooth, and the restored **Player Status** (`rc player status`) for detailed playback info.
+> - **Pro Terminal UI**: Redesigned command editor with a professional, dark console aesthetic.
+> - **Action Selection**: Streamlined the action sequence menu by removing redundant root-only entries.
 
 <p align="center">
   <img src="images/IMG_1396.PNG" width="250" alt="RemoteCompanion Interface" />
@@ -25,31 +22,34 @@ RemoteCompanion brings fast, scriptable system control to modern rootless jailbr
 </p>
 
 ## Features
-- **Instant Response**: Actions execute in milliseconds using a optimized, dependency-free architecture.
-- **Smart Control**: Run multi-step action sequences, open apps, or control settings remotely.
+- **Action Favorites**: Keep your most-used commands, apps, and shortcuts pinned to the top for lightning access.
+- **Root Execution**: Integrated root support for terminal commands both in-app (per action) and via CLI flags.
+- **Instant Response**: High-speed command execution (~0.25s) using optimized TCP probes on port `12340`.
+- **Smart Control**: Run multi-step action sequences, edit existing actions inline, or control settings remotely.
 - **Hardware Triggers**: Bind actions to Power/Volume buttons, Home button, Touch ID (Tap/Hold), or the Ringer Switch.
-- **Visual Excellence**: Modern iOS aesthetics with Large Titles, SF Symbols, and frosted glass effects.
+- **Visual Excellence**: Modern iOS aesthetics with Large Titles, SF Symbols, and a professional dark terminal editor.
 - **Universal Search**: Instantly find actions, shortcuts, and devices with integrated search bars in every picker.
-- **Native Experience**: Redesigned edge-to-edge Terminal and Lua editors with full iPad landscape support.
-- **Advanced Automation**: Full support for NFC tags, custom scripts, and Siri integration.
-- **Live Discovery**: Real-time management and connection for nearby AirPlay and Bluetooth hardware.
+- **Cross-Version Support**: Full compatibility for iOS 14 through iOS 16+, supporting both Rootless and Rootful environments.
+- **Advanced Automation**: Full support for NFC tags, custom Lua scripts, and native Siri integration.
+- **iPad Experience**: Native landscape orientation and optimized layouts for iPad power users.
+- **Live Discovery**: Discovery-based live lists for nearby AirPlay and Bluetooth hardware.
+- **True Multitasking**: Concurrent server handling powered by GCD—zero battery drain, zero blocking.
 
 ## What you can do
 
 ### Media & Volume
 - `rc play` / `rc pause` / `rc playpause` / `rc next` / `rc prev`
-- `rc volume 0-100` - Set volume.
-- `rc volume` - Get current volume percentage.
+- `rc volume 0-100` - Set volume level.
 - `rc mute [on|off|toggle|status]` - Control media mute state.
 - `rc anc [on|off|transparency]` - Control headphone ANC (requires Sonitus).
 
 ### Device Control
-- `rc lock` / `rc lock toggle` / `rc lock status`
+- `rc lock` / `rc lock toggle`
 - `rc unlock <pin>` - Wakes and unlocks the device.
 - `rc button [power|lock|home|volup|voldown|mute]` - Simulate physical buttons.
 - `rc brightness 0-100` - Set screen brightness.
 - `rc flashlight [on|off|toggle]` - Control the torch.
-- `rc rotate [lock|unlock|toggle|status]` - Orientation lock control.
+- `rc rotate [lock|unlock|toggle]` - Orientation lock control.
 - `rc dnd [on|off|toggle]` - Toggle Do Not Disturb.
 - `rc low power mode [on|off|toggle]` - Toggle battery saver.
 - `rc airplane [on|off|toggle]` - Control Airplane Mode.
@@ -58,7 +58,6 @@ RemoteCompanion brings fast, scriptable system control to modern rootless jailbr
 ### Apps & Shortcuts
 - `rc open <alias|bundleID>` (e.g., `youtube`, `spotify`, `settings`, `messages`, `home`, `photos`, `camera`, `clock`, `maps`, `calendar`, `weather`, `notes`, `reminders`, `appstore`, `mail`, `music`, `phone`, `stocks`, `calculator`, `tv`, `wallet`, `facetime`, `files`).
 - `rc kill <alias|bundleID>` - Force close an app.
-- `rc app` - Get current foreground app's bundle ID.
 - `rc shortcut -r "Name" [-p "Input"]` - Run any Shortcut (requires SpringCuts).
 - `rc url "https://google.com"` - Open any link (with smart unlock).
 - `rc spotify <playlist|album|artist> <id>` - Play specific Spotify content.
@@ -87,11 +86,24 @@ Configure these in the `RemoteCompanion` app for custom action sequences. Tip: *
 - `rc type "Text"` - Type text (supports symbols).
 - `rc paste "Text"` - Paste into clipboard.
 - `rc key <hex>` - Specific keyboard keys (e.g., `0x04` for 'A', `0x28` for Enter).
-- `rc notify -t "Title" -m "Msg" [-p priority]` - Send push notifications (via ntfy). Priority: `min`, `low`, `default`, `high`, `urgent`.
+- `rc notify -t "Title" -m "Msg" [-p priority]` - Send push notifications (via ntfy).
+
+### Status & Queries
+Get instant feedback from your device state.
+- `rc volume` - Returns current volume %.
+- `rc app` - Returns foreground app bundle ID.
+- `rc is-locked` / `rc lock status` - Returns `locked` or `unlocked`.
+- `rc player status` - Returns detailed playback state (`Playing`, `Paused`, `Stopped`, etc.).
+- `rc mute status` - Returns current media mute state and level.
+- `rc rotate status` - Returns orientation lock state.
+- `rc dnd status` - Returns Do Not Disturb state.
+- `rc lpm status` - Returns Low Power Mode state.
+- `rc airplane status` - Returns Airplane Mode state.
+- `rc wifi status` / `rc bt status` - Returns connectivity states.
+- `rc flashlight status` - Returns torch state.
 
 ### System & Diagnostics
 - `rc respring` - Restart SpringBoard.
-- `rc is-locked` - Check if device contains a passcode lock and is currently locked.
 
 ## Getting Started
 
