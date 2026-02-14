@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.0] - 2026-02-14
+
+### Added
+- **Root Execution Toggle**: Terminal commands now feature a native "Execute as Root" toggle directly in the editor. No more separate menu items; just toggle it on for system-level actions.
+- **Action Favorites**: You can now mark any system command, app, or shortcut as a "Favorite" for lightning-fast access at the top of the picker.
+- **CLI Root Support**: The `rc` command-line tool now supports `-r` and `--root` flags to quickly fire off root commands from your Mac (e.g., `rc -r ldrestart`).
+
+### Improved
+- **Modern Terminal UI**: Redesigned the terminal input screen with a "pro" console aesthetic. Features a near-black, high-contrast text area with rounded corners and monospaced typography.
+- **Consolidated Actions**: Merged "Terminal Command" and "Terminal Command (Root)" into a single, intuitive entry.
+- **Smart Editing**: When editing an existing terminal command, the editor now correctly remembers and displays the root toggle state.
+
+### Changed
+- **Unified Action Picker**: Streamlined the action selection menu by removing redundant "Root" variants in favor of the new editor-integrated toggles.
+
 ## [2.1.2] - 2026-02-06
 
 ### Fixed
