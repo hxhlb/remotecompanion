@@ -7,7 +7,7 @@ RemoteCompanion brings fast, scriptable system control to modern rootless jailbr
 > - **Run as Root**: Full support for system-level actions via a native root toggle in the editor and CLI flags (`rc -r`).
 > - **System Utilities**: Native support for **system utilities** such as `ldrestart`, `userspace-reboot`, and `uicache`, built directly into the core and available as preset UI actions.
 > - **Action Favorites**: Mark any app, shortcut, or command as a favorite for instant access at the top of the picker.
-> - **Device Status Queries**: Instantly poll device state from the CLI. Includes DND, Low Power Mode, WiFi, Bluetooth, and **Player Status** (`rc player status`).
+> - **Device Status Queries**: Poll device state from the CLI. Includes DND, Low Power Mode, WiFi, Bluetooth, and **Player Status** (`rc player status`).
 
 <p align="center">
   <img src="images/IMG_1401.PNG" width="250" alt="RemoteCompanion Interface" />

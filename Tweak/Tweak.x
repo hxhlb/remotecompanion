@@ -4036,6 +4036,7 @@ static BOOL g_bottomBarHapticFired = NO;
                 if (deltaX > 30) {
                     trigger_haptic();
                     g_bottomBarHapticFired = YES;
+                    SRLog(@"[SpringRemote] Bottom Bar Haptic FIRE (deltaX=%.2f)", deltaX);
                 }
             }
         }
@@ -4068,10 +4069,10 @@ static BOOL g_bottomBarHapticFired = NO;
                  CGFloat deltaX = loc.x - g_bottomBarSwipeStartX;
                  CGFloat deltaY = fabs(loc.y - g_bottomBarSwipeStartY);
 
-                 // Swipe threshold: 80pts horizontal, less than 50pts vertical
+                 // Swipe threshold: 60pts horizontal (relaxed), less than 100pts vertical (relaxed for arcs)
                  // Note: Native home swipe is strictly horizontal/vertical mix, but usually starts at very bottom. 
                  // We rely on our > 30pt haptic feedback to signal "we got it"
-                 if (fabs(deltaX) > 80 && deltaY < 50) {
+                 if (fabs(deltaX) > 60 && deltaY < 120) {
                      NSString *swipeTrigger = (deltaX > 0) ? @"trigger_bottombar_swipe_right" : @"trigger_bottombar_swipe_left";
                      
                      load_trigger_config();
