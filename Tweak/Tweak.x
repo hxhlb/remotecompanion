@@ -4021,9 +4021,19 @@ static BOOL g_bottomBarHapticFired = NO;
             if (g_statusBarTouchActive && !g_statusBarHoldTriggered) {
                 CGFloat deltaX = fabs(loc.x - g_statusBarSwipeStartX);
                 
-                // If moved more than 30pts, cancel the hold and give haptic feedback - this is a swipe
-                if (deltaX > 30 && g_statusBarHoldTimer) {
-                    trigger_haptic();  // Haptic NOW during swipe motion
+                // If moved more than 30pts, cancel the hold...
+                if (fabs(deltaX) > 30 && g_statusBarHoldTimer) {
+                    // Check enablement before haptic
+                    NSString *swipeTrigger = (deltaX > 0) ? @"trigger_statusbar_swipe_right" : @"trigger_statusbar_swipe_left";
+                    
+                    load_trigger_config();
+                    BOOL enabled = [g_triggerConfig[@"masterEnabled"] boolValue] && 
+                                   [g_triggerConfig[@"triggers"][swipeTrigger][@"enabled"] boolValue];
+                    
+                    if (enabled) {
+                        trigger_haptic();
+                    }
+                    
                     [g_statusBarHoldTimer invalidate];
                     g_statusBarHoldTimer = nil;
                     g_pendingStatusBarTrigger = nil;
@@ -4032,11 +4042,21 @@ static BOOL g_bottomBarHapticFired = NO;
 
             // Bottom bar: Check for horizontal swipe movement for haptic feedback
             if (g_bottomBarTouchActive && !g_bottomBarHapticFired) {
-                CGFloat deltaX = fabs(loc.x - g_bottomBarSwipeStartX);
-                if (deltaX > 15) { // Lowered from 30 to 15 for snappier feedback
-                    trigger_haptic();
+                CGFloat signedDeltaX = loc.x - g_bottomBarSwipeStartX;
+                CGFloat absDeltaX = fabs(signedDeltaX);
+                
+                if (absDeltaX > 15) { // Lowered from 30 to 15 for snappier feedback
+                    NSString *swipeTrigger = (signedDeltaX > 0) ? @"trigger_bottombar_swipe_right" : @"trigger_bottombar_swipe_left";
+                    
+                    load_trigger_config();
+                    BOOL enabled = [g_triggerConfig[@"masterEnabled"] boolValue] && 
+                                   [g_triggerConfig[@"triggers"][swipeTrigger][@"enabled"] boolValue];
+
+                    if (enabled) {
+                        trigger_haptic();
+                        SRLog(@"[SpringRemote] Bottom Bar Haptic FIRE (deltaX=%.2f)", absDeltaX);
+                    }
                     g_bottomBarHapticFired = YES;
-                    SRLog(@"[SpringRemote] Bottom Bar Haptic FIRE (deltaX=%.2f)", deltaX);
                 }
             }
         }
@@ -4203,8 +4223,6 @@ static BOOL g_bottomBarHapticFired = NO;
         if (verticalSwipeDistance > 30 && horizontalDrift < 100) {
             SRLog(@"[SpringRemote] Instant Edge Trigger! V=%.2f H=%.2f", verticalSwipeDistance, horizontalDrift);
             
-            // Haptic feedback
-            AudioServicesPlaySystemSound(1520);
             gesture.hasTriggered = YES;
 
             NSString *triggerKey = nil;
@@ -4220,6 +4238,8 @@ static BOOL g_bottomBarHapticFired = NO;
                                [g_triggerConfig[@"triggers"][triggerKey][@"enabled"] boolValue];
                 
                 if (enabled) {
+                    // Haptic feedback ONLY if enabled
+                    AudioServicesPlaySystemSound(1520);
                     RCExecuteTrigger(triggerKey);
                     SRLog(@"[SpringRemote] %@ FIRED INSTANTLY!", triggerKey);
                 } else {

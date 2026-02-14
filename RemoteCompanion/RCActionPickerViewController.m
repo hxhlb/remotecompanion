@@ -274,7 +274,6 @@
     
     [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
         textField.keyboardType = UIKeyboardTypeNumberPad;
-        textField.placeholder = @"50";
         textField.textAlignment = NSTextAlignmentCenter;
     }];
     
