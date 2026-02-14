@@ -29,7 +29,9 @@
     // Create text view
     _textView = [[UITextView alloc] init];
     _textView.font = [UIFont monospacedSystemFontOfSize:15 weight:UIFontWeightRegular];
-    _textView.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
+    _textView.backgroundColor = [UIColor colorWithWhite:0.12 alpha:1.0];
+    _textView.layer.cornerRadius = 10;
+    _textView.layer.masksToBounds = YES;
     _textView.textContainerInset = UIEdgeInsetsMake(15, 15, 15, 15);
     _textView.autocapitalizationType = UITextAutocapitalizationTypeNone;
     _textView.autocorrectionType = UITextAutocorrectionTypeNo;
@@ -55,7 +57,7 @@
     if (self.showRootToggle) {
         // Create container for toggle
         UIView *toggleContainer = [[UIView alloc] init];
-        toggleContainer.backgroundColor = [UIColor secondarySystemGroupedBackgroundColor];
+        toggleContainer.backgroundColor = [UIColor clearColor];
         toggleContainer.translatesAutoresizingMaskIntoConstraints = NO;
         [self.view addSubview:toggleContainer];
         
