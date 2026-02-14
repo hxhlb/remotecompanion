@@ -642,6 +642,7 @@ static void inject_consumer_key(int usage) {
     inject_hid_event(kHIDPage_Consumer, usage, 50000000, 0); // 50ms hold
 }
 
+
 static void simulate_home_press() {
     dispatch_async(dispatch_get_main_queue(), ^{
         SRLog(@"[SpringRemote] Executing Home simulation...");
@@ -835,9 +836,8 @@ static void load_trigger_config() {
                 // Thread-safe update: replace the pointer
                 g_triggerConfig = newConfig;
                 g_resolvedConfigPath = path;
-                SRLog(@"[SpringRemote] Loaded trigger config from %@: masterEnabled=%@, triggers=%lu",
+                SRLog(@"[SpringRemote] Loaded trigger config from %@: triggers=%lu",
                       path,
-                      g_triggerConfig[@"masterEnabled"],
                       (unsigned long)[g_triggerConfig[@"triggers"] count]);
             } else {
                 SRLog(@"[SpringRemote] Failed to parse config at %@", path);
@@ -846,16 +846,6 @@ static void load_trigger_config() {
             SRLog(@"[SpringRemote] No trigger config found at shared path or in app containers");
         }
     }
-}
-static void save_trigger_config(NSDictionary *config) {
-    NSString *path = g_resolvedConfigPath ?: kTriggerConfigPath;
-    [config writeToFile:path atomically:YES];
-    
-    // Post notification for app and tweak to reload
-    notify_post(kConfigChangedNotification);
-    
-    // Reload locally immediately
-    load_trigger_config();
 }
 
 static void update_simulation_observers();
@@ -2444,29 +2434,6 @@ static NSString *handle_command(NSString *cmd) {
         } else {
             return @"Error: AVSystemController not found\n";
         }    
-    } else if ([cleanCmd hasPrefix:@"haptics "]) {
-        NSString *subcheck = [cleanCmd substringFromIndex:8];
-        
-        NSMutableDictionary *mutableConfig = [g_triggerConfig mutableCopy];
-        if (!mutableConfig) mutableConfig = [NSMutableDictionary dictionary];
-
-        if ([subcheck isEqualToString:@"on"]) {
-            mutableConfig[@"hapticsEnabled"] = @YES;
-            save_trigger_config(mutableConfig);
-            return @"Haptics Enabled\n";
-        } else if ([subcheck isEqualToString:@"off"]) {
-            mutableConfig[@"hapticsEnabled"] = @NO;
-            save_trigger_config(mutableConfig);
-            return @"Haptics Disabled\n";
-        } else if ([subcheck isEqualToString:@"toggle"]) {
-            BOOL current = [mutableConfig[@"hapticsEnabled"] boolValue];
-            mutableConfig[@"hapticsEnabled"] = @(!current);
-            save_trigger_config(mutableConfig);
-            return current ? @"Haptics Disabled\n" : @"Haptics Enabled\n";
-        } else if ([subcheck isEqualToString:@"status"]) {
-            BOOL current = [g_triggerConfig[@"hapticsEnabled"] boolValue];
-            return current ? @"Haptics: ON\n" : @"Haptics: OFF\n";
-        }
     } else if ([cleanCmd hasPrefix:@"vibration "]) {
         NSString *subcheck = [cleanCmd substringFromIndex:10];
         
@@ -3129,10 +3096,6 @@ static BOOL g_bioWasLocked = NO;
 // Helper to trigger haptic feedback
 // Helper to trigger haptic feedback
 static void trigger_haptic() {
-    load_trigger_config();
-    if (g_triggerConfig[@"hapticsEnabled"] && ![g_triggerConfig[@"hapticsEnabled"] boolValue]) {
-        return; // Haptics disabled globally
-    }
     AudioServicesPlaySystemSound(1520);
 }
 

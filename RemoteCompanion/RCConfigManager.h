@@ -5,7 +5,6 @@
 @property (nonatomic, assign) BOOL masterEnabled;
 @property (nonatomic, assign) BOOL tcpEnabled;
 @property (nonatomic, assign) BOOL nfcEnabled;
-@property (nonatomic, assign) BOOL hapticsEnabled;
 
 
 + (instancetype)sharedManager;

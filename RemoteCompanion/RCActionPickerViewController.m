@@ -108,10 +108,7 @@
             @{ @"name": @"Userspace Reboot", @"command": @"userspace-reboot", @"icon": @"arrow.clockwise.circle" },
             @{ @"name": @"Refresh Icon Cache (uicache)", @"command": @"uicache", @"icon": @"square.grid.2x2" },
             @{ @"name": @"Lock Status", @"command": @"lock status", @"icon": @"lock.circle" },
-            @{ @"name": @"Haptics On", @"command": @"haptics on", @"icon": @"iphone.radiowaves.left.and.right" },
-            @{ @"name": @"Haptics Off", @"command": @"haptics off", @"icon": @"iphone.slash" },
-            @{ @"name": @"Haptics Toggle", @"command": @"haptics toggle", @"icon": @"iphone.badge.play" },
-            @{ @"name": @"Haptics Status", @"command": @"haptics status", @"icon": @"waveform.path.ecg" },
+            @{ @"name": @"Lock Status", @"command": @"lock status", @"icon": @"lock.circle" },
             
             // System Vibration
             @{ @"name": @"Silent Vibrate Toggle", @"command": @"vibration silent-toggle", @"icon": @"bell.slash" },

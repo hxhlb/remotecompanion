@@ -54,7 +54,6 @@ RemoteCompanion brings fast, scriptable system control to modern rootless jailbr
 - `rc low power mode [on|off|toggle]` - Toggle battery saver.
 - `rc airplane [on|off|toggle]` - Control Airplane Mode.
 - `rc haptic` / `rc screenshot`
-- `rc haptics [on|off|toggle|status]` - Global haptics control (internal).
 - `rc vibration [silent-toggle|ring-toggle]` - System "Vibrate on Silent/Ring" settings.
 - `rc vibration [silent-status|ring-status]` - Check current system vibration state (CLI only).
 
