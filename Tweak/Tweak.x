@@ -2791,19 +2791,47 @@ static NSString *handle_command(NSString *cmd) {
         SRLog(@"[SpringRemote] Triggering Respring via killbackboardd");
         
         dispatch_async(dispatch_get_main_queue(), ^{
-            // Reliable Tweak way: Kill backboardd
             pid_t pid;
             const char* args[] = { "killall", "-9", "backboardd", NULL };
             NSString *killallPath = [NSString stringWithFormat:@"%@/usr/bin/killall", root_prefix()];
             posix_spawn(&pid, [killallPath UTF8String], NULL, NULL, (char* const*)args, NULL);
             
-            // Fallback for non-rootless
             if (pid <= 0) {
                  const char* args2[] = { "killall", "-9", "backboardd", NULL };
                  posix_spawn(&pid, "/usr/bin/killall", NULL, NULL, (char* const*)args2, NULL);
             }
         });
         return @"Device Respringing...\n";
+    } else if ([cleanCmd isEqualToString:@"ldrestart"]) {
+        SRLog(@"[SpringRemote] Triggering ldrestart");
+        dispatch_async(dispatch_get_main_queue(), ^{
+            pid_t pid;
+            NSString *binPath = [NSString stringWithFormat:@"%@/usr/bin/ldrestart", root_prefix()];
+            if (![[NSFileManager defaultManager] fileExistsAtPath:binPath]) binPath = @"/usr/bin/ldrestart";
+            const char* args[] = { [binPath UTF8String], NULL };
+            posix_spawn(&pid, [binPath UTF8String], NULL, NULL, (char* const*)args, NULL);
+        });
+        return @"Triggering ldrestart...\n";
+    } else if ([cleanCmd isEqualToString:@"uicache"]) {
+        SRLog(@"[SpringRemote] Triggering uicache");
+        dispatch_async(dispatch_get_main_queue(), ^{
+            pid_t pid;
+            NSString *binPath = [NSString stringWithFormat:@"%@/usr/bin/uicache", root_prefix()];
+            if (![[NSFileManager defaultManager] fileExistsAtPath:binPath]) binPath = @"/usr/bin/uicache";
+            const char* args[] = { [binPath UTF8String], "-a", NULL };
+            posix_spawn(&pid, [binPath UTF8String], NULL, NULL, (char* const*)args, NULL);
+        });
+        return @"Triggering uicache...\n";
+    } else if ([cleanCmd isEqualToString:@"userspace-reboot"]) {
+        SRLog(@"[SpringRemote] Triggering userspace-reboot");
+        dispatch_async(dispatch_get_main_queue(), ^{
+            pid_t pid;
+            NSString *binPath = [NSString stringWithFormat:@"%@/bin/launchctl", root_prefix()];
+            if (![[NSFileManager defaultManager] fileExistsAtPath:binPath]) binPath = @"/bin/launchctl";
+            const char* args[] = { [binPath UTF8String], "reboot", "userspace", NULL };
+            posix_spawn(&pid, [binPath UTF8String], NULL, NULL, (char* const*)args, NULL);
+        });
+        return @"Triggering userspace-reboot...\n";
     } else if ([cleanCmd hasPrefix:@"shortcut:"]) {
         NSString *shortcutName = [[cleanCmd substringFromIndex:9] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         

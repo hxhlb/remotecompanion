@@ -4,11 +4,11 @@ RemoteCompanion brings fast, scriptable system control to modern rootless jailbr
 
 > [!IMPORTANT]
 > **What's New in v2.2**
-> - **Run as Root**: Native root toggle in the command editor and new CLI support (`rc -r`) for system-level actions.
+> - **Run as Root**: Full support for system-level actions via a native root toggle in the editor and CLI flags (`rc -r`).
+> - **System Utilities**: Native support for **Root Utilities** like `ldrestart`, `userspace-reboot`, and `uicache` built directly into the core.
 > - **Action Favorites**: Mark any app, shortcut, or command as a favorite for instant access at the top of the picker.
-> - **Device Status Queries**: Instantly poll device state from the CLI. Includes DND, Low Power Mode, WiFi, Bluetooth, and the restored **Player Status** (`rc player status`) for detailed playback info.
-> - **Pro Terminal UI**: Redesigned command editor with a professional, dark console aesthetic.
-> - **Action Selection**: Streamlined the action sequence menu by removing redundant root-only entries.
+> - **Device Status Queries**: Instantly poll device state from the CLI. Includes DND, Low Power Mode, WiFi, Bluetooth, and **Player Status** (`rc player status`).
+> - **Pro Terminal UI**: Redesigned command editor with a professional, dark console aesthetic and a native **Run as Root** toggle.
 
 <p align="center">
   <img src="images/IMG_1396.PNG" width="250" alt="RemoteCompanion Interface" />
@@ -104,6 +104,9 @@ Get instant feedback from your device state.
 
 ### System & Diagnostics
 - `rc respring` - Restart SpringBoard.
+- `rc ldrestart` - Soft reboot the device.
+- `rc userspace-reboot` - Reboot userspace.
+- `rc uicache` - Refresh the icon cache.
 
 ## Getting Started
 
