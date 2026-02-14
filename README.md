@@ -98,6 +98,54 @@ Get instant feedback from your device state.
 - `rc is-locked` / `rc lock status` - Returns `locked` or `unlocked`.
 - `rc player status` - Returns detailed playback state (`Playing`, `Paused`, `Stopped`, etc.).
 - `rc mute status` - Returns current media mute state and level.
+
+## Lua Scripting & Objective-C Bridge
+
+RemoteCompanion v2.2 introduces a powerful Lua bridge that allows you to execute arbitrary Lua scripts within the tweak's process. exact same context is available whether you run a script file from the CLI or paste code into the "Lua Script" action in the app.
+
+### How to Run
+- **From CLI**: `rc lua /path/to/script.lua`
+- **From UI**: Add Action → System → **Custom Lua Script**. Paste your code directly into the prompt.
+
+### API Bindings
+
+| Function | Description |
+| :--- | :--- |
+| `log(msg)` | Writes to the system log (syslog). |
+| `delay(seconds)` | Pauses execution for `seconds`. |
+| `haptic()` | Triggers a standard haptic feedback. |
+| `openURL(url)` | Opens a URL scheme (e.g. `prefs:root=General`). |
+| `dlopen(path)` | Loads a dynamic library. Returns `true` on success. |
+| `objc_call(target, selector, args...)` | Calls an Objective-C method. `target` can be a class name string or an instance. |
+
+### Examples
+
+**1. Toggle Flasklight (Objective-C Bridge)**
+```lua
+-- Get the AVCaptureDevice class
+local device = objc_call("AVCaptureDevice", "defaultDeviceWithMediaType:", "vide")
+
+if device then
+    -- Check if it has a torch
+    if objc_call(device, "hasTorch") then
+        -- Toggle it
+        local isOn = objc_call(device, "isTorchActive")
+        local mode = isOn and 0 or 1 -- 0 = Off, 1 = On
+        
+        objc_call(device, "lockForConfiguration:", nil)
+        objc_call(device, "setTorchMode:", mode)
+        objc_call(device, "unlockForConfiguration")
+    end
+end
+```
+
+**2. Check Battery Level**
+```lua
+local device = objc_call("UIDevice", "currentDevice")
+objc_call(device, "setBatteryMonitoringEnabled:", true)
+local level = objc_call(device, "batteryLevel")
+log("Battery Level: " .. (level * 100) .. "%")
+```
 - `rc rotate status` - Returns orientation lock state.
 - `rc dnd status` - Returns Do Not Disturb state.
 - `rc lpm status` - Returns Low Power Mode state.

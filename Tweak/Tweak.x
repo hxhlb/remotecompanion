@@ -1099,6 +1099,139 @@ static int lua_log(lua_State *L) {
     return 0;
 }
 
+// Lua binding: dlopen(path)
+static int lua_dlopen(lua_State *L) {
+    const char *path = luaL_checkstring(L, 1);
+    void *handle = dlopen(path, RTLD_NOW);
+    if (handle) {
+        lua_pushboolean(L, 1);
+        return 1;
+    } else {
+        lua_pushnil(L);
+        lua_pushstring(L, dlerror());
+        return 2;
+    }
+}
+
+// Helper to convert Lua arg to ObjC object
+static id lua_to_id(lua_State *L, int index) {
+    int type = lua_type(L, index);
+    if (type == LUA_TSTRING) {
+        return [NSString stringWithUTF8String:lua_tostring(L, index)];
+    } else if (type == LUA_TNUMBER) {
+        return @(lua_tonumber(L, index));
+    } else if (type == LUA_TBOOLEAN) {
+        return @(lua_toboolean(L, index));
+    } else if (type == LUA_TNIL) {
+        return nil;
+    }
+    return nil;
+}
+
+// Lua binding: objc_call(className, selector, args...)
+static int lua_objc_call(lua_State *L) {
+    int top = lua_gettop(L);
+    if (top < 2) {
+        lua_pushnil(L);
+        lua_pushstring(L, "Usage: objc_call(className, selector, ...)");
+        return 2;
+    }
+
+    // 1. Target Class
+    id target = nil;
+    if (lua_type(L, 1) == LUA_TSTRING) {
+        const char *clsName = lua_tostring(L, 1);
+        target = objc_getClass(clsName);
+        if (!target) {
+             lua_pushnil(L);
+             lua_pushstring(L, "Class not found");
+             return 2;
+        }
+    } else {
+        lua_pushnil(L);
+        lua_pushstring(L, "Target must be class name (string)");
+        return 2;
+    }
+
+    // 2. Selector
+    const char *selName = luaL_checkstring(L, 2);
+    SEL selector = sel_registerName(selName);
+    
+    // 3. Signature
+    NSMethodSignature *sig = [target methodSignatureForSelector:selector];
+    if (!sig) {
+        lua_pushnil(L);
+        lua_pushstring(L, "Method signature not found");
+        return 2;
+    }
+    
+    NSInvocation *inv = [NSInvocation invocationWithMethodSignature:sig];
+    [inv setTarget:target];
+    [inv setSelector:selector];
+    
+    // 4. Arguments
+    NSUInteger numArgs = [sig numberOfArguments];
+    // arg 0 is self, 1 is _cmd. Lua args start at index 3 (mapped to ObjC arg 2)
+    for (NSUInteger i = 2; i < numArgs; i++) {
+        int luaIdx = (int)i + 1; 
+        if (luaIdx > top) break;
+        
+        const char *type = [sig getArgumentTypeAtIndex:i];
+        // Basic type handling
+        if (strcmp(type, "@") == 0) { // Object
+            id obj = lua_to_id(L, luaIdx);
+            [inv setArgument:&obj atIndex:i];
+        } else if (strcmp(type, "i") == 0 || strcmp(type, "s") == 0 || strcmp(type, "l") == 0 || strcmp(type, "q") == 0 || strcmp(type, "Q") == 0) { // Integers
+             long long val = (long long)lua_tonumber(L, luaIdx);
+             [inv setArgument:&val atIndex:i];
+        } else if (strcmp(type, "f") == 0 || strcmp(type, "d") == 0) { // Floats
+             double val = lua_tonumber(L, luaIdx);
+             [inv setArgument:&val atIndex:i];
+        } else if (strcmp(type, "B") == 0 || strcmp(type, "c") == 0) { // BOOL / char
+             BOOL val = lua_toboolean(L, luaIdx);
+             [inv setArgument:&val atIndex:i];
+        } else if (strcmp(type, ":") == 0) { // Selector
+             const char *s = lua_tostring(L, luaIdx);
+             SEL sel = sel_registerName(s);
+             [inv setArgument:&sel atIndex:i];
+        }
+    }
+    
+    [inv invoke];
+    
+    // 5. Return Value
+    const char *retType = [sig methodReturnType];
+    if (strcmp(retType, "@") == 0) {
+        __unsafe_unretained id retVal;
+        [inv getReturnValue:&retVal];
+        if (retVal == nil) {
+            lua_pushnil(L);
+        } else if ([retVal isKindOfClass:[NSString class]]) {
+            lua_pushstring(L, [retVal UTF8String]);
+        } else if ([retVal isKindOfClass:[NSNumber class]]) {
+            lua_pushnumber(L, [retVal doubleValue]);
+        } else {
+             lua_pushstring(L, [[retVal description] UTF8String]);
+        }
+        return 1;
+    } else if (strcmp(retType, "v") == 0) {
+        return 0;
+    } else if (strcmp(retType, "B") == 0 || strcmp(retType, "c") == 0) {
+        BOOL val;
+        [inv getReturnValue:&val];
+        lua_pushboolean(L, val);
+        return 1;
+    } else if (strcmp(retType, "i") == 0 || strcmp(retType, "s") == 0 || strcmp(retType, "l") == 0 || strcmp(retType, "q") == 0 || strcmp(retType, "Q") == 0) {
+        long long val;
+        [inv getReturnValue:&val];
+        lua_pushnumber(L, (double)val);
+        return 1;
+    } else {
+        // Unknown return type, return nil
+        return 0;
+    }
+}
+
 // Execute a Lua script file
 static lua_State *setup_lua_environment() {
     lua_State *L = luaL_newstate();
@@ -1115,6 +1248,10 @@ static lua_State *setup_lua_environment() {
     lua_setglobal(L, "haptic");
     lua_pushcfunction(L, lua_log);
     lua_setglobal(L, "log");
+    lua_pushcfunction(L, lua_dlopen);
+    lua_setglobal(L, "dlopen");
+    lua_pushcfunction(L, lua_objc_call);
+    lua_setglobal(L, "objc_call");
     
     return L;
 }
