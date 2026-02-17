@@ -73,6 +73,8 @@
     _actions = [[[RCConfigManager sharedManager] actionsForTrigger:_triggerKey] mutableCopy];
     
     // Always-on editing behavior
+    self.tableView.editing = YES;
+    self.tableView.allowsSelectionDuringEditing = YES;
     self.tableView.dragInteractionEnabled = YES;
     self.tableView.dragDelegate = self;
     self.tableView.dropDelegate = self;
@@ -662,7 +664,7 @@
         cell.imageView.tintColor = [UIColor systemGrayColor];
     }
 
-    cell.showsReorderControl = NO; // Managed by drag/drop API
+    cell.showsReorderControl = YES; 
 
     return cell;
 }
@@ -728,9 +730,21 @@
     return YES;
 }
 
+- (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath *)destinationIndexPath {
+    NSString *action = _actions[sourceIndexPath.row];
+    [_actions removeObjectAtIndex:sourceIndexPath.row];
+    [_actions insertObject:action atIndex:destinationIndexPath.row];
+    [self saveActions];
+}
+
 // Deletion (legacy - leading/trailing swipe actions are preferred now)
 - (UITableViewCellEditingStyle)tableView:(UITableView *)tableView editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath {
     return UITableViewCellEditingStyleNone; // Prevent standard delete indicator
 }
+
+- (BOOL)tableView:(UITableView *)tableView shouldIndentWhileEditingRowAtIndexPath:(NSIndexPath *)indexPath {
+    return NO;
+}
+
 
 @end
