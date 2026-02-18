@@ -5,12 +5,12 @@ RemoteCompanion brings fast, scriptable system control to modern rootless jailbr
 > [!IMPORTANT]
 > **What's New in v2.2**
 > - **Run as Root**: Full support for system-level actions via a native root toggle in the editor and CLI flags (`rc -r`).
+> - **Lua Dynamic Bridge**: Lua scripts now support `dlopen` and `objc_call`.
 > - **New System Utilities**: Native support for `ldrestart`, `userspace-reboot`, and `uicache`, built directly into the core and available as preset UI actions.
 > - **Action Favorites**: Mark any app, shortcut, or command as a favorite for instant access at the top of the picker.
 > - **Device Status Queries**: Poll device state from the CLI. Includes DND, Low Power Mode, WiFi, Bluetooth, and **Player Status** (`rc player status`).
-> - **System Vibration Control**: New `rc vibration` command to **Turn On/Off** or Toggle the system-wide "Vibrate on Silent" and "Vibrate on Ring" settings directly from the CLI or Action Picker. Added status commands for CLI usage.
-> - **Lua Dynamic Bridge & Logging**: Lua scripts now support `dlopen` and `objc_call`. Added `rc log` command to instantly stream debug logs from the device.
-> - **Bottom Bar Gestures**: New swipe triggers for the bottom edge of the screen (left/right) with refined haptic feedback.
+> - **System Vibration Control**: New `rc vibration` command to **Turn On/Off** or Toggle the system-wide "Vibrate on Silent" and "Vibrate on Ring" settings directly from the CLI or Action Picker.
+> - **Bottom Bar Gestures**: New swipe triggers for the bottom edge of the screen (left/right).
 
 <p align="center">
   <img src="images/IMG_1401.PNG" width="250" alt="RemoteCompanion Interface" />
