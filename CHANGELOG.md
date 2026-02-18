@@ -16,7 +16,8 @@ All notable changes to this project will be documented in this file.
 - **Debug Logging**: Added `rc log` to stream live logs from the device, making it easier to debug custom scripts and system actions.
 
 ### Improved
-- **Modern Terminal UI**: Redesigned the terminal input screen with a "pro" console aesthetic. Features a near-black, high-contrast text area with rounded corners and monospaced typography.
+- **Always-Editable Sequences**: Removed the "Edit" button in favor of permanent reorder handles and intuitive swipe-to-delete functionality. Manage your actions faster without extra taps.
+- **Modern Terminal UI**: Redesigned the terminal input screen with a "pro" console aesthetic. Features a charcoal-grey, high-contrast text area with rounded corners and monospaced typography.
 - **Consolidated Actions**: Merged "Terminal Command" and "Terminal Command (Root)" into a single, intuitive entry.
 - **Smart Editing**: When editing an existing terminal command, the editor now correctly remembers and displays the root toggle state.
 - **Haptic Intelligence**: Haptic feedback now only fires when a trigger is actually enabled and assigned an action, eliminating phantom vibrations for unconfigured gestures (Status Bar, Bottom Bar, and Edge gestures).
