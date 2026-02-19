@@ -149,10 +149,12 @@ elif [[ "$CMD" == "respring" ]]; then
         # Fallback to keys or manual password entry
         ssh -o StrictHostKeyChecking=no mobile@$TARGET_IP "sbreload"
     fi
+
     exit 0
+elif [[ "$CMD" == "shortcut "* ]]; then
     # Convert "shortcut Name" to "shortcut:Name"
     CMD="shortcut:${CMD#shortcut }"
-elif [[ "$CMD" == "log" ]]; then
+elif [[ "$CMD" == "logs" || "$CMD" == "log" ]]; then
     # Stream logs from the device
     echo "Streaming logs from /tmp/remotecommand.log (showing last 50 lines)..."
     IP="${RC_IPHONE_IP:-iphone.local}"
