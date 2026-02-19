@@ -53,9 +53,9 @@ RemoteCompanion brings fast, scriptable system control to modern rootless jailbr
 - `rc dnd [on|off|toggle]` - Toggle Do Not Disturb.
 - `rc low power mode [on|off|toggle]` - Toggle battery saver.
 - `rc airplane [on|off|toggle]` - Control Airplane Mode.
-- `rc haptic` / `rc screenshot`
+- `rc haptic` / `rc screenshot` - Control Airplane Mode.
 - `rc vibration [silent-toggle|ring-toggle]` - System "Vibrate on Silent/Ring" settings.
-- `rc vibration [silent-status|ring-status]` - Check current system vibration state (CLI only).
+
 
 ### Apps & Shortcuts
 - `rc open <alias|bundleID>` (e.g., `youtube`, `spotify`, `settings`, `messages`, `home`, `photos`, `camera`, `clock`, `maps`, `calendar`, `weather`, `notes`, `reminders`, `appstore`, `mail`, `music`, `phone`, `stocks`, `calculator`, `tv`, `wallet`, `facetime`, `files`).
@@ -98,6 +98,7 @@ Get instant feedback from your device state.
 - `rc player status` - Returns detailed playback state (`Playing`, `Paused`, `Stopped`, etc.).
 - `rc mute status` - Returns current media mute state and level.
 - `rc log` - Streams live debug logs from the device (`/tmp/remotecommand.log`).
+- `rc vibration [silent-status|ring-status]` - Check current system vibration state (CLI only).
 
 ## Lua Scripting & Objective-C Bridge
 

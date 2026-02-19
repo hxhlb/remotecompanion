@@ -163,7 +163,7 @@ elif [[ "$CMD" == "log" ]]; then
     exit 0
 fi
 
-# Send command to the SpringRemote tweak on the iPhone
+# Send command to the RemoteCompanion tweak on the iPhone
 IP="${RC_IPHONE_IP:-iphone.local}"
 
 # 1. FAST PATH: Direct TCP Connection
