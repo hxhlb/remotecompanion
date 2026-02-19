@@ -8,19 +8,15 @@ RemoteCompanion brings fast, scriptable system control to modern rootless jailbr
 > - **Lua Dynamic Bridge**: Lua scripts now support `dlopen` and `objc_call`.
 > - **New System Utilities**: Native support for `ldrestart`, `userspace-reboot`, and `uicache`, built directly into the core and available as preset UI actions.
 > - **Trigger Favorites**: Mark any trigger as a favorite for instant access at the top of the picker for instant access to edit or long-press to run.
-> - **Device Status Queries**: Poll device state from the CLI. Includes DND, Low Power Mode, WiFi, Bluetooth, and **Player Status** (`rc player status`).
+> - **Device Status Queries**: Poll device state from the CLI. Includes DND, Low Power Mode, WiFi, Bluetooth, **Player Status** (`rc player status`), and **Live Debug Logs** (`rc logs`).
 > - **System Vibration Control**: New `rc vibration` command to **Turn On/Off** or Toggle the system-wide "Vibrate on Silent" and "Vibrate on Ring" settings directly from the CLI or Action Picker.
 > - **Bottom Bar Gestures**: New swipe triggers for the bottom edge of the screen (left/right).
 
 <p align="center">
-  <img src="images/IMG_1401.PNG" width="250" alt="RemoteCompanion Interface" />
-  <img src="images/IMG_1394.PNG" width="250" alt="Trigger Config" />
-  <img src="images/IMG_1397.PNG" width="250" alt="Search and Select" />
-</p>
-<p align="center">
-  <img src="images/IMG_1389.PNG" width="250" alt="Haptic Settings" />
-  <img src="images/IMG_1390.PNG" width="250" alt="Settings View" />
-  <img src="images/IMG_1395.PNG" width="250" alt="Action Picker" />
+  <img src="images/1.png" width="200" alt="RemoteCompanion Interface" />
+  <img src="images/2.2.png" width="200" alt="Action Picker" />
+  <img src="images/3.png" width="200" alt="Trigger Config" />
+  <img src="images/4.png" width="200" alt="Settings View" />
 </p>
 
 ## Features
@@ -97,7 +93,7 @@ Get instant feedback from your device state.
 - `rc is-locked` / `rc lock status` - Returns `locked` or `unlocked`.
 - `rc player status` - Returns detailed playback state (`Playing`, `Paused`, `Stopped`, etc.).
 - `rc mute status` - Returns current media mute state and level.
-- `rc log` - Streams live debug logs from the device (`/tmp/remotecommand.log`).
+- `rc logs` - Stream live debug logs from the device (tail `/tmp/remotecommand.log`).
 - `rc vibration [silent-status|ring-status]` - Check current system vibration state (CLI only).
 
 ## Lua Scripting & Objective-C Bridge
