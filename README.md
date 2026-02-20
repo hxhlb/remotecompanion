@@ -165,10 +165,10 @@ log("Battery Level: " .. (level * 100) .. "%")
 ### 2. Installation Options
 
 #### Option 1: Repository (Recommended)
-Add `https://saihgupr.github.io/RemoteCompanion` to Zebra, or use `zbra://sources/add/https://saihgupr.github.io/RemoteCompanion`
+Add `https://saihgupr.github.io/remotecompanion` to Zebra, or use `zbra://sources/add/https://saihgupr.github.io/remotecompanion`
 
 #### Option 2: Manual Install
-Download the `.deb` from [Releases](https://github.com/saihgupr/RemoteCompanion/releases).
+Download the `.deb` from [Releases](https://github.com/saihgupr/remotecompanion/releases).
 
 #### Option 3: Build from Source
 `cd Tweak && make package install`.
@@ -242,6 +242,6 @@ This ensures the tweak does not attempt to access the NFC controller on wake, re
 
 ## Support & Feedback
 
-If you encounter any issues or have feature requests, please [open an issue](https://github.com/saihgupr/RemoteCompanion/issues) on GitHub.
+If you encounter any issues or have feature requests, please [open an issue](https://github.com/saihgupr/remotecompanion/issues) on GitHub.
 
 If you like this project, consider giving it a star ⭐ or making a small donation.
