@@ -151,9 +151,9 @@ log("Finished haptic feedback.")
 #### Option 1: Repository (Recommended)
 Add `https://saihgupr.github.io/remotecompanion` to Sileo or Zebra
 
-sileo://source/https://saihgupr.github.io/remotecompanion
+Add to Sileo: sileo://source/https://saihgupr.github.io/remotecompanion
 
-zbra://sources/add/https://saihgupr.github.io/remotecompanion
+Add to Zebra: zbra://sources/add/https://saihgupr.github.io/remotecompanion
 
 #### Option 2: Manual Install
 Download the `.deb` from [Releases](https://github.com/saihgupr/remotecompanion/releases).
@@ -204,10 +204,8 @@ Actions can even be fired from shortcuts using Powercuts.
    rc volume 50
    ```
 
-## Home Assistant Setup
-
 <details>
-<summary><b>View Home Assistant Setup</b></summary>
+<summary><h3>Home Assistant Setup</h3></summary>
 
 Add this to your `configuration.yaml`:
 ```yaml
@@ -224,6 +222,7 @@ data:
 ```
 
 </details>
+
 ## Troubleshooting
 
 ### Apple Pay Issues
