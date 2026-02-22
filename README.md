@@ -1,6 +1,6 @@
 # RemoteCompanion
 
-RemoteCompanion brings fast, scriptable system control to modern rootless jailbreaks. It lets you bind physical gestures and hardware buttons to system actions, media controls, and custom scripts.
+RemoteCompanion provides fast, scriptable system control for modern rootless jailbreaks. It lets you bind physical gestures and hardware buttons, or send commands remotely from your computer, to trigger system actions, control media playback, and run custom scripts.
 
 > [!IMPORTANT]
 > **What's New in v2.2**
@@ -252,4 +252,4 @@ This ensures the tweak does not attempt to access the NFC controller on wake, re
 
 If you encounter any issues or have feature requests, please [open an issue](https://github.com/saihgupr/remotecompanion/issues) on GitHub.
 
-If you like this project, consider giving it a star ⭐ or making a small donation.
+RemoteCompanion is open-source and free. If you find it useful, consider giving it a star ⭐ or making a [donation](https://ko-fi.com/saihgupr) to support development.
