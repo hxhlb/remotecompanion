@@ -63,12 +63,12 @@ Replaces: com.pizzaman.remotecommand
 Conflicts: com.pizzaman.remotecommand
 Architecture: iphoneos-arm
 Version: 2.2.0
-Installed-Size: 1568
+Installed-Size: 1056
 Filename: ./com.saihgupr.remotecompanion_2.2.0_iphoneos-arm.deb
-Size: 303242
-MD5sum: d3a8152979ad3c1ef0052ba752992b52
-SHA1: aca0bc24c16f0c1db891749f8ff0c1d15bddc2a8
-SHA256: d725435e039170d1da61acead41b997e98ca0483b777b4cb571c4bf16c33ab98
+Size: 252284
+MD5sum: 698ce285794f9b5a0121159dddbfc3e9
+SHA1: 91b19cf4ee9cdd65c7ed3eabe341ffd910f6e179
+SHA256: e9831086ba8beb90bdc1ff41a769c3ca4be16b4e699c22c6ddb4db880dc0b604
 
 Package: com.saihgupr.remotecompanion
 Name: RemoteCompanion
@@ -117,12 +117,12 @@ Replaces: com.pizzaman.remotecommand
 Conflicts: com.pizzaman.remotecommand
 Architecture: iphoneos-arm
 Version: 2.1.2
-Installed-Size: 1536
+Installed-Size: 1372
 Filename: ./com.saihgupr.remotecompanion_2.1.2_iphoneos-arm.deb
-Size: 291550
-MD5sum: 397eeb8e51472adac1c2bab89d424762
-SHA1: 53c6138130db4b9f9750e468304ed55f68351104
-SHA256: 1afd44bca47e9cf91a9d01a302c23747526492fe459a30da64b6c2d6f0c95db1
+Size: 286712
+MD5sum: e5a96b8a0e20bd2ec8c98b248d8d9235
+SHA1: fe12f0be5782180b675b7cc60a07989c991c8175
+SHA256: 083adc3ed593824bec35f0fc0431eb0f8b28905588c3f194d620fe7e06739cc5
 
 Package: com.saihgupr.remotecompanion
 Name: RemoteCompanion
@@ -209,10 +209,10 @@ Architecture: iphoneos-arm64
 Version: 2.2.0
 Installed-Size: 1568
 Filename: ./com.saihgupr.remotecompanion_2.2.0_iphoneos-arm64.deb
-Size: 303908
-MD5sum: 0018461ab5363eca02f43391427e3d77
-SHA1: f5b91f6930529bdc8fe50195edb97494f5d5afa2
-SHA256: 945d9c73121a72af422ce1d5d3fc7f9ab349fde0f66d467920213770494bb184
+Size: 305026
+MD5sum: 54925420052e712c6b84fef98bcb23f8
+SHA1: 6810439eb455e7634d893aec6e9909cb4e63884b
+SHA256: 56b2c3551f7a5e639d4134065f3869d818d7dc4333908bbcd49b707a8b40596a
 
 Package: com.saihgupr.remotecompanion
 Name: RemoteCompanion
@@ -261,10 +261,10 @@ Replaces: com.pizzaman.remotecommand
 Conflicts: com.pizzaman.remotecommand
 Architecture: iphoneos-arm64
 Version: 2.1.2
-Installed-Size: 1536
+Installed-Size: 1372
 Filename: ./com.saihgupr.remotecompanion_2.1.2_iphoneos-arm64.deb
-Size: 291504
-MD5sum: 956ba50ce68629397f0762fda9481c00
-SHA1: 4716429430086efad28c7b16ac23a3b7c99d2f46
-SHA256: 605949d7be3f2b1d2faaac194882d37c1d27de0a1db7b07021be7fb133a1f164
+Size: 286594
+MD5sum: 72eb7f8322816c99ce00172c8dce2625
+SHA1: f57bbcb404c12b8d7c48689524708ce91bc082ae
+SHA256: 1aa1d46040b648e6b5a4f90531d8971ff6e75f1ff6e998b96a4b9662202b0692
 

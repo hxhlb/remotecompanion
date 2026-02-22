@@ -151,9 +151,9 @@ log("Finished haptic feedback.")
 #### Option 1: Repository (Recommended)
 Add `https://saihgupr.github.io/remotecompanion` to Sileo or Zebra
 
-Add to Sileo: sileo://source/https://saihgupr.github.io/remotecompanion
+[Add to Zebra](zbra://sources/add/https://saihgupr.github.io/remotecompanion)
 
-Add to Zebra: zbra://sources/add/https://saihgupr.github.io/remotecompanion
+[Add to Sileo](sileo://source/https://saihgupr.github.io/remotecompanion)
 
 #### Option 2: Manual Install
 Download the `.deb` from [Releases](https://github.com/saihgupr/remotecompanion/releases).
