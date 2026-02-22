@@ -65,10 +65,10 @@ Architecture: iphoneos-arm
 Version: 2.2.0
 Installed-Size: 1056
 Filename: ./com.saihgupr.remotecompanion_2.2.0_iphoneos-arm.deb
-Size: 252240
-MD5sum: 5d50878fe183d25b59ae14b8aa298475
-SHA1: f7cfc1207c729ce55b87451bb5bdb621865c577c
-SHA256: b5ff229bd5afd03698b3700a5084c71c76259c5b16bf44f0eb4e1d7ed1de1bf5
+Size: 252284
+MD5sum: 698ce285794f9b5a0121159dddbfc3e9
+SHA1: 91b19cf4ee9cdd65c7ed3eabe341ffd910f6e179
+SHA256: e9831086ba8beb90bdc1ff41a769c3ca4be16b4e699c22c6ddb4db880dc0b604
 
 Package: com.saihgupr.remotecompanion
 Name: RemoteCompanion
@@ -117,12 +117,12 @@ Replaces: com.pizzaman.remotecommand
 Conflicts: com.pizzaman.remotecommand
 Architecture: iphoneos-arm
 Version: 2.1.2
-Installed-Size: 1536
+Installed-Size: 1372
 Filename: ./com.saihgupr.remotecompanion_2.1.2_iphoneos-arm.deb
-Size: 291550
-MD5sum: 397eeb8e51472adac1c2bab89d424762
-SHA1: 53c6138130db4b9f9750e468304ed55f68351104
-SHA256: 1afd44bca47e9cf91a9d01a302c23747526492fe459a30da64b6c2d6f0c95db1
+Size: 286712
+MD5sum: e5a96b8a0e20bd2ec8c98b248d8d9235
+SHA1: fe12f0be5782180b675b7cc60a07989c991c8175
+SHA256: 083adc3ed593824bec35f0fc0431eb0f8b28905588c3f194d620fe7e06739cc5
 
 Package: com.saihgupr.remotecompanion
 Name: RemoteCompanion
@@ -209,10 +209,10 @@ Architecture: iphoneos-arm64
 Version: 2.2.0
 Installed-Size: 1568
 Filename: ./com.saihgupr.remotecompanion_2.2.0_iphoneos-arm64.deb
-Size: 304972
-MD5sum: 741e796ceabf24cedd06717591359dab
-SHA1: 51366097870b6802a7685da401ffc28c5c62ba04
-SHA256: b3c464dbbf4cb5e20338e6773b9c37ebfb98c7a62114ab800849f0f12c8ac561
+Size: 305026
+MD5sum: 54925420052e712c6b84fef98bcb23f8
+SHA1: 6810439eb455e7634d893aec6e9909cb4e63884b
+SHA256: 56b2c3551f7a5e639d4134065f3869d818d7dc4333908bbcd49b707a8b40596a
 
 Package: com.saihgupr.remotecompanion
 Name: RemoteCompanion
@@ -261,10 +261,10 @@ Replaces: com.pizzaman.remotecommand
 Conflicts: com.pizzaman.remotecommand
 Architecture: iphoneos-arm64
 Version: 2.1.2
-Installed-Size: 1536
+Installed-Size: 1372
 Filename: ./com.saihgupr.remotecompanion_2.1.2_iphoneos-arm64.deb
-Size: 291504
-MD5sum: 956ba50ce68629397f0762fda9481c00
-SHA1: 4716429430086efad28c7b16ac23a3b7c99d2f46
-SHA256: 605949d7be3f2b1d2faaac194882d37c1d27de0a1db7b07021be7fb133a1f164
+Size: 286594
+MD5sum: 72eb7f8322816c99ce00172c8dce2625
+SHA1: f57bbcb404c12b8d7c48689524708ce91bc082ae
+SHA256: 1aa1d46040b648e6b5a4f90531d8971ff6e75f1ff6e998b96a4b9662202b0692
 
