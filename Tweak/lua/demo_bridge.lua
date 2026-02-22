@@ -38,12 +38,23 @@ else
     print("❌ Failed to get UIDevice")
 end
 
--- Example B: Toggle Flashlight via SpringBoard (AVCaptureDevice)
--- Note: This is a bit complex in raw ObjC, so let's stick to simple property reading for the demo.
--- Let's check if the device is locked via SBLockScreenManager (SpringBoard specific)
-
-local isLocked = objc_call("SBLockScreenManager", "sharedInstance", "isUILocked")
-print("🔒 Device Locked Status: " .. tostring(isLocked))
+-- Example B: Toggle Flashlight (AVCaptureDevice)
+print("🔦 Toggling Flashlight...")
+local device = objc_call("AVCaptureDevice", "defaultDeviceWithMediaType:", "vide")
+if device then
+    if objc_call(device, "hasTorch") then
+        local isOn = objc_call(device, "isTorchActive")
+        local mode = isOn and 0 or 1
+        objc_call(device, "lockForConfiguration:", nil)
+        objc_call(device, "setTorchMode:", mode)
+        objc_call(device, "unlockForConfiguration")
+        print("🔦 Flashlight toggled!")
+    else
+        print("❌ Device has no torch")
+    end
+else
+    print("❌ Failed to get AVCaptureDevice")
+end
 
 -- Example C: Trigger Haptic (Native Binding)
 print("📳 Triggering Haptic...")

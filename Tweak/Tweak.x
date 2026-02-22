@@ -1122,6 +1122,8 @@ static id lua_to_id(lua_State *L, int index) {
         return @(lua_tonumber(L, index));
     } else if (type == LUA_TBOOLEAN) {
         return @(lua_toboolean(L, index));
+    } else if (type == LUA_TLIGHTUSERDATA || type == LUA_TUSERDATA) {
+        return (__bridge id)lua_touserdata(L, index);
     } else if (type == LUA_TNIL) {
         return nil;
     }
@@ -1137,7 +1139,7 @@ static int lua_objc_call(lua_State *L) {
         return 2;
     }
 
-    // 1. Target Class
+    // 1. Target Class or Instance
     id target = nil;
     if (lua_type(L, 1) == LUA_TSTRING) {
         const char *clsName = lua_tostring(L, 1);
@@ -1147,9 +1149,11 @@ static int lua_objc_call(lua_State *L) {
              lua_pushstring(L, "Class not found");
              return 2;
         }
+    } else if (lua_type(L, 1) == LUA_TLIGHTUSERDATA || lua_type(L, 1) == LUA_TUSERDATA) {
+        target = (__bridge id)lua_touserdata(L, 1);
     } else {
         lua_pushnil(L);
-        lua_pushstring(L, "Target must be class name (string)");
+        lua_pushstring(L, "Target must be class name (string) or object (userdata)");
         return 2;
     }
 
@@ -1178,10 +1182,16 @@ static int lua_objc_call(lua_State *L) {
         
         const char *type = [sig getArgumentTypeAtIndex:i];
         // Basic type handling
-        if (strcmp(type, "@") == 0) { // Object
+        if (strcmp(type, "@") == 0 || strcmp(type, "#") == 0) { // Object or Class
             id obj = lua_to_id(L, luaIdx);
             [inv setArgument:&obj atIndex:i];
-        } else if (strcmp(type, "i") == 0 || strcmp(type, "s") == 0 || strcmp(type, "l") == 0 || strcmp(type, "q") == 0 || strcmp(type, "Q") == 0) { // Integers
+        } else if (type[0] == '^') { // Pointer
+            void *ptr = NULL;
+            if (lua_type(L, luaIdx) == LUA_TLIGHTUSERDATA || lua_type(L, luaIdx) == LUA_TUSERDATA) {
+                ptr = lua_touserdata(L, luaIdx);
+            }
+            [inv setArgument:&ptr atIndex:i];
+        } else if (strcmp(type, "i") == 0 || strcmp(type, "s") == 0 || strcmp(type, "l") == 0 || strcmp(type, "q") == 0 || strcmp(type, "Q") == 0 || strcmp(type, "I") == 0 || strcmp(type, "S") == 0 || strcmp(type, "L") == 0) { // Integers
              long long val = (long long)lua_tonumber(L, luaIdx);
              [inv setArgument:&val atIndex:i];
         } else if (strcmp(type, "f") == 0 || strcmp(type, "d") == 0) { // Floats
@@ -1211,7 +1221,7 @@ static int lua_objc_call(lua_State *L) {
         } else if ([retVal isKindOfClass:[NSNumber class]]) {
             lua_pushnumber(L, [retVal doubleValue]);
         } else {
-             lua_pushstring(L, [[retVal description] UTF8String]);
+             lua_pushlightuserdata(L, (__bridge void *)retVal);
         }
         return 1;
     } else if (strcmp(retType, "v") == 0) {

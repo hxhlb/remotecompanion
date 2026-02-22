@@ -52,7 +52,6 @@ RemoteCompanion brings fast, scriptable system control to modern rootless jailbr
 - `rc haptic` / `rc screenshot` - Haptic feedback / Screenshot (or activate Snapper 3).
 - `rc vibration [silent-toggle|ring-toggle]` - System "Vibrate on Silent/Ring" settings.
 
-
 ### Apps & Shortcuts
 - `rc open <alias|bundleID>` (e.g., `youtube`, `spotify`, `settings`, `messages`, `home`, `photos`, `camera`, `clock`, `maps`, `calendar`, `weather`, `notes`, `reminders`, `appstore`, `mail`, `music`, `phone`, `stocks`, `calculator`, `tv`, `wallet`, `facetime`, `files`).
 - `rc kill <alias|bundleID>` - Force close an app.
@@ -95,8 +94,21 @@ Get instant feedback from your device state.
 - `rc mute status` - Returns current media mute state and level.
 - `rc logs` - Stream live debug logs from the device (tail `/tmp/remotecommand.log`).
 - `rc vibration [silent-status|ring-status]` - Check current system vibration state (CLI only).
+- `rc rotate status` - Returns orientation lock state.
+- `rc dnd status` - Returns Do Not Disturb state.
+- `rc lpm status` - Returns Low Power Mode state.
+- `rc airplane status` - Returns Airplane Mode state.
+- `rc wifi status` / `rc bt status` - Returns connectivity states.
+- `rc flashlight status` - Returns torch state.
 
-## Lua Scripting & Objective-C Bridge
+### System & Diagnostics
+- `rc respring` - Restart SpringBoard.
+- `rc ldrestart` - Soft reboot the device.
+- `rc userspace-reboot` - Reboot userspace.
+- `rc uicache` - Refresh the icon cache.
+
+<details>
+<summary><h3>Lua Scripting & Objective-C Bridge</h3></summary>
 
 RemoteCompanion v2.2 introduces a powerful Lua bridge that allows you to execute arbitrary Lua scripts within the tweak's process. exact same context is available whether you run a script file from the CLI or paste code into the "Lua Script" action in the app.
 
@@ -115,46 +127,18 @@ RemoteCompanion v2.2 introduces a powerful Lua bridge that allows you to execute
 | `dlopen(path)` | Loads a dynamic library. Returns `true` on success. |
 | `objc_call(target, selector, args...)` | Calls an Objective-C method. `target` can be a class name string or an instance. |
 
-### Examples
+### Example
 
-**1. Toggle Flasklight (Objective-C Bridge)**
+**Trigger Haptic and Log**
 ```lua
--- Get the AVCaptureDevice class
-local device = objc_call("AVCaptureDevice", "defaultDeviceWithMediaType:", "vide")
-
-if device then
-    -- Check if it has a torch
-    if objc_call(device, "hasTorch") then
-        -- Toggle it
-        local isOn = objc_call(device, "isTorchActive")
-        local mode = isOn and 0 or 1 -- 0 = Off, 1 = On
-        
-        objc_call(device, "lockForConfiguration:", nil)
-        objc_call(device, "setTorchMode:", mode)
-        objc_call(device, "unlockForConfiguration")
-    end
-end
+log("Starting haptic engine...")
+haptic()
+delay(0.2)
+haptic()
+log("Finished haptic feedback.")
 ```
 
-**2. Check Battery Level**
-```lua
-local device = objc_call("UIDevice", "currentDevice")
-objc_call(device, "setBatteryMonitoringEnabled:", true)
-local level = objc_call(device, "batteryLevel")
-log("Battery Level: " .. (level * 100) .. "%")
-```
-- `rc rotate status` - Returns orientation lock state.
-- `rc dnd status` - Returns Do Not Disturb state.
-- `rc lpm status` - Returns Low Power Mode state.
-- `rc airplane status` - Returns Airplane Mode state.
-- `rc wifi status` / `rc bt status` - Returns connectivity states.
-- `rc flashlight status` - Returns torch state.
-
-### System & Diagnostics
-- `rc respring` - Restart SpringBoard.
-- `rc ldrestart` - Soft reboot the device.
-- `rc userspace-reboot` - Reboot userspace.
-- `rc uicache` - Refresh the icon cache.
+</details>
 
 ## Getting Started
 
@@ -165,7 +149,11 @@ log("Battery Level: " .. (level * 100) .. "%")
 ### 2. Installation Options
 
 #### Option 1: Repository (Recommended)
-Add `https://saihgupr.github.io/remotecompanion` to Sileo or Zebra, or use [Add to Sileo](sileo://source/https://saihgupr.github.io/remotecompanion/) / [Add to Zebra](zbra://sources/add/https://saihgupr.github.io/remotecompanion/)
+Add `https://saihgupr.github.io/remotecompanion` to Sileo or Zebra
+
+sileo://source/https://saihgupr.github.io/remotecompanion
+
+zbra://sources/add/https://saihgupr.github.io/remotecompanion
 
 #### Option 2: Manual Install
 Download the `.deb` from [Releases](https://github.com/saihgupr/remotecompanion/releases).
@@ -218,6 +206,9 @@ Actions can even be fired from shortcuts using Powercuts.
 
 ## Home Assistant Setup
 
+<details>
+<summary><b>View Home Assistant Setup</b></summary>
+
 Add this to your `configuration.yaml`:
 ```yaml
 shell_command:
@@ -231,6 +222,8 @@ service: shell_command.iphone_remote
 data:
   cmd: 'play'
 ```
+
+</details>
 ## Troubleshooting
 
 ### Apple Pay Issues
