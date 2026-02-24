@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - **Shortcuts Integration Methods**: Expanded documentation for iOS Shortcuts. Added instructions for running commands via native **SSH to Localhost** (recommended for reliability) and **Powercuts** (shell).
 
 ### Fixed
+- Improved `rc` CLI with automatic on-device detection (defaults to `127.0.0.1` when run on iPhone, fixing connection issues for local users).
 - **Universal Root Permissions**: Fixed `rc-root` permission handling to support both **Rootful** and **Rootless** jailbreak environments in the post-install script.
 
 ## [2.2.0] - 2026-02-14
