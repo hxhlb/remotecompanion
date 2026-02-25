@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.3] - 2026-02-25
+
+### Added
+- Root Access Control setting (guards root commands).
+### Removed
+- ntfy integration for improved privacy.
+### Changed
+- Minor version bump.
+
 ## [2.2.2] - 2026-02-24
 
 ### Fixed

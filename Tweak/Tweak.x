@@ -2831,11 +2831,23 @@ static NSString *handle_command(NSString *cmd) {
             usleep((useconds_t)(seconds * 1000000));
         }
         return nil;
-    } else if ([cleanCmd hasPrefix:@"exec-root "] || [cleanCmd hasPrefix:@"root "]) {
         // Execute command as root via setuid helper
         NSString *shellCmd = [cleanCmd hasPrefix:@"root "]
             ? [[cleanCmd substringFromIndex:5] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
             : [[cleanCmd substringFromIndex:10] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        
+        load_trigger_config();
+        BOOL rootEnabled = NO;
+        if (g_triggerConfig) {
+             id rootVal = g_triggerConfig[@"rootEnabled"];
+             rootEnabled = (rootVal == nil) ? NO : [rootVal boolValue];
+        }
+
+        if (!rootEnabled) {
+            SRLog(@"[RemoteCommand] Root command rejected: disabled in settings");
+            return @"Error: Root Command is disabled in Settings.\n";
+        }
+
         SRLog(@"Executing as root: %@", shellCmd);
 
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -3268,9 +3280,30 @@ static void start_server() {
                 if (valread > 0) {
                     NSString *cmd = [[NSString alloc] initWithBytes:local_buffer length:valread encoding:NSUTF8StringEncoding];
                     // SRLog(@"[RemoteCommand] Received: %@", cmd);
-                    NSString *response = handle_command(cmd);
-                    if (response) {
-                        write(new_socket, [response UTF8String], [response lengthOfBytesUsingEncoding:NSUTF8StringEncoding]);
+                    
+                    BOOL tcpEnabled = NO;
+                    if (isLocalhost) {
+                        NSString *response = handle_command(cmd);
+                        if (response) {
+                            write(new_socket, [response UTF8String], [response lengthOfBytesUsingEncoding:NSUTF8StringEncoding]);
+                        }
+                    } else {
+                        load_trigger_config();
+                        if (g_triggerConfig) {
+                             id tcpVal = g_triggerConfig[@"tcpEnabled"];
+                             tcpEnabled = (tcpVal == nil) ? NO : [tcpVal boolValue];
+                        }
+                        
+                        if (tcpEnabled) {
+                            NSString *response = handle_command(cmd);
+                            if (response) {
+                                write(new_socket, [response UTF8String], [response lengthOfBytesUsingEncoding:NSUTF8StringEncoding]);
+                            }
+                        } else {
+                            SRLog(@"[RemoteCommand] Rejected non-localhost connection from %s", client_ip);
+                            close(new_socket);
+                            return;
+                        }
                     }
                     // SRLog(@"[RemoteCommand] Processed command");
                 } else if (valread < 0) {

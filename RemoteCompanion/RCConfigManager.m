@@ -100,7 +100,13 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
             [self saveConfig];
         }
 
-        // Auto-add hapticsEnabled if missing
+        // Auto-add rootEnabled if missing
+        if (_config[@"rootEnabled"] == nil) {
+            _config[@"rootEnabled"] = @NO;
+            [self saveConfig];
+        }
+
+        // Auto-add hapticsEnabled
         if (_config[@"hapticsEnabled"] == nil) {
             _config[@"hapticsEnabled"] = @YES;
             [self saveConfig];
@@ -112,6 +118,7 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
             @"masterEnabled": @YES,
             @"tcpEnabled": @NO,
             @"nfcEnabled": @YES,
+            @"rootEnabled": @NO,
             @"triggers": [@{
                 @"volume_up_hold": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
                 @"volume_down_hold": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
@@ -165,6 +172,23 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
 
 - (void)setTcpEnabled:(BOOL)tcpEnabled {
     _config[@"tcpEnabled"] = @(tcpEnabled);
+    [self saveConfig];
+}
+
+- (void)setNfcEnabled:(BOOL)nfcEnabled {
+    _config[@"nfcEnabled"] = @(nfcEnabled);
+    if (!nfcEnabled) {
+        [self stopBackgroundNFC];
+    }
+    [self saveConfig];
+}
+
+- (BOOL)rootEnabled {
+    return [_config[@"rootEnabled"] boolValue];
+}
+
+- (void)setRootEnabled:(BOOL)rootEnabled {
+    _config[@"rootEnabled"] = @(rootEnabled);
     [self saveConfig];
 }
 

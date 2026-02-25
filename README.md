@@ -83,7 +83,7 @@ Configure these in the `RemoteCompanion` app for custom action sequences. Tip: *
 - `rc type "Text"` - Type text (supports symbols).
 - `rc paste "Text"` - Paste into clipboard.
 - `rc key <hex>` - Specific keyboard keys (e.g., `0x04` for 'A', `0x28` for Enter).
-- `rc notify -t "Title" -m "Msg" [-p priority]` - Send push notifications (via ntfy).
+- `rc log` - View the RemoteCompanion server logs.
 
 ### Status & Queries
 Get instant feedback from your device state.
@@ -238,6 +238,20 @@ data:
 ```
 
 </details>
+
+## Security
+
+RemoteCompanion implements several measures to ensure your device remains secure:
+
+### Security
+RemoteCompanion's External TCP Server (ports 12340-12344) is designed for speed and convenience within a trusted local network.
+
+- **Enablement**: The server must be explicitly enabled in the app settings under "TCP Server".
+- **Local Network**: It is recommended to use the TCP server only on trusted home networks.
+- **SSH Support**: For secure remote access over the internet, we recommend using SSH (which is enabled by default on jailbroken devices). The `rc` script will automatically fallback to SSH if the direction connection is unavailable.
+
+### Root Access Control
+The "Root Command" feature must be explicitly enabled in the app settings.
 
 ## Troubleshooting
 

@@ -130,7 +130,7 @@
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    if (section == 0) return 3; // Master toggle + TCP toggle + NFC toggle
+    if (section == 0) return 4; // Master + TCP + NFC + Root
     return 2; // Export, Import
 }
 
@@ -151,13 +151,20 @@
             _tcpSwitch.on = [RCConfigManager sharedManager].tcpEnabled;
             [_tcpSwitch addTarget:self action:@selector(tcpToggleChanged:) forControlEvents:UIControlEventValueChanged];
             cell.accessoryView = _tcpSwitch;
-            cell.selectionStyle = UITableViewCellSelectionStyleNone;
+            cell.selectionStyle = UITableViewCellSelectionSelectionStyleNone;
         } else if (indexPath.row == 2) {
             cell.textLabel.text = @"NFC Scanning";
             _nfcSwitch = [[UISwitch alloc] init];
             _nfcSwitch.on = [RCConfigManager sharedManager].nfcEnabled;
             [_nfcSwitch addTarget:self action:@selector(nfcToggleChanged:) forControlEvents:UIControlEventValueChanged];
             cell.accessoryView = _nfcSwitch;
+            cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        } else if (indexPath.row == 3) {
+            cell.textLabel.text = @"Root Command";
+            _rootSwitch = [[UISwitch alloc] init];
+            _rootSwitch.on = [RCConfigManager sharedManager].rootEnabled;
+            [_rootSwitch addTarget:self action:@selector(rootToggleChanged:) forControlEvents:UIControlEventValueChanged];
+            cell.accessoryView = _rootSwitch;
             cell.selectionStyle = UITableViewCellSelectionStyleNone;
         }
     } else {
@@ -192,6 +199,10 @@
 
 
 #pragma mark - Actions
+
+- (void)rootToggleChanged:(UISwitch *)sender {
+    [RCConfigManager sharedManager].rootEnabled = sender.on;
+}
 
 - (void)masterToggleChanged:(UISwitch *)sender {
     [RCConfigManager sharedManager].masterEnabled = sender.on;
@@ -309,6 +320,7 @@
         _masterSwitch.on = [RCConfigManager sharedManager].masterEnabled;
         _tcpSwitch.on = [RCConfigManager sharedManager].tcpEnabled;
         _nfcSwitch.on = [RCConfigManager sharedManager].nfcEnabled;
+        [self.tableView reloadData];
         
         UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Import Successful" message:@"Configuration restored. Return to Triggers to see changes." preferredStyle:UIAlertControllerStyleAlert];
         [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
