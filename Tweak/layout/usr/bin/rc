@@ -1,0 +1,108 @@
+#!/bin/bash
+
+IP="${RC_IPHONE_IP:-iphone.local}"
+PORT="1234"
+
+# If on device, try to read config for IP if we are default
+if [[ "$IP" == "iphone.local" && -f "/var/mobile/Documents/rc_triggers.plist" ]]; then
+    # We are on the device, use localhost
+    IP="127.0.0.1"
+fi
+
+# Parse global options (must come before command)
+ROOT_CMD=0
+while [[ "$1" =~ ^- ]]; do
+    case "$1" in
+        -r|--root)
+            ROOT_CMD=1
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+if [ -z "$1" ]; then
+    echo "Usage: rc [-r] <command> [arg]"
+    echo ""
+    echo "Implemented Commands:"
+    echo "  -r, --root        - Run command as root"
+    echo "  play, pause       - Media Control"
+    echo "  vol-up, vol-down  - Volume Control"
+    echo "  set-vol <0-100>   - Set Volume"
+    echo "  shortcut \"Name\"   - Run a Shortcut (e.g. rc shortcut \"Turn Lights On\")"
+    echo "  ping              - Play Alert Sound"
+    echo "  respring          - Restart SpringBoard"
+    echo "  bt on/off         - Turn Bluetooth On/Off"
+    echo "  wifi on/off       - Turn WiFi On/Off"
+    echo "  airplane on/off   - Turn Airplane Mode On/Off"
+    echo "  brightness <0-100> - Set screen brightness"
+    echo "  haptic            - Trigger haptic tap"
+    echo "  flash on/off      - Turn flashlight on/off"
+    echo "  rotate lock/unlock - Toggle orientation lock"
+    echo "  is-locked         - Check if device is locked"
+    echo "  dnd on/off/debug   - Toggle Do Not Disturb or inspect state"
+    echo "  log               - Stream device logs"
+    echo ""
+    exit 1
+fi
+
+# Construct the command string
+CMD=""
+if [ "$#" -eq 1 ]; then
+    CMD="$1"
+else
+    for arg in "$@"; do
+        if [[ "$arg" == *" "* ]]; then
+            CMD="$CMD \"$arg\""
+        else
+            CMD="$CMD $arg"
+        fi
+    done
+    CMD=$(echo "$CMD" | sed 's/^ //')
+fi
+
+# Prepend root if requested
+if [ "$ROOT_CMD" -eq 1 ]; then
+    CMD="root $CMD"
+fi
+
+# Map user-friendly commands
+if [[ "$CMD" == "vol-up" || "$CMD" == "volup" ]]; then
+    CMD="button volup"
+elif [[ "$CMD" == "vol-down" || "$CMD" == "voldown" ]]; then
+    CMD="button voldown"
+elif [[ "$CMD" == "respring" ]]; then
+    echo "Respringing device..."
+    ssh -o StrictHostKeyChecking=no mobile@$IP "sbreload"
+    exit 0
+elif [[ "$CMD" == "shortcut "* ]]; then
+    CMD="shortcut:${CMD#shortcut }"
+elif [[ "$CMD" == "log" ]]; then
+    ssh -o StrictHostKeyChecking=no mobile@$IP "tail -f /tmp/remotecommand.log"
+    exit 0
+fi
+
+# Send command
+PORTS=(12340 12341 12342 12343 12344)
+for PORT in "${PORTS[@]}"; do
+    if bash -c "exec 3<>/dev/tcp/$IP/$PORT && echo -n '$CMD' >&3 && cat <&3 && exec 3>&-" 2>/dev/null; then
+        exit 0
+    fi
+    echo -n "$CMD" | nc -w 2 "$IP" "$PORT" 2>/dev/null
+    if [ $? -eq 0 ]; then
+        exit 0
+    fi
+done
+
+# Revert to SSH if direct fails
+for PORT in 12340 12341 12342 12343 12344; do
+     ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no mobile@$IP "echo -n '$CMD' | /var/jb/usr/bin/nc -w 2 127.0.0.1 $PORT" 2>/dev/null
+     if [ $? -eq 0 ]; then
+         exit 0
+     fi
+done
+
+echo "Error: Cannot connect to iPhone at $IP." >&2
+exit 1

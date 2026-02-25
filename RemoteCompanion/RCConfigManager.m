@@ -200,14 +200,6 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
     return [_config[@"nfcEnabled"] boolValue];
 }
 
-- (void)setNfcEnabled:(BOOL)nfcEnabled {
-    _config[@"nfcEnabled"] = @(nfcEnabled);
-    if (!nfcEnabled) {
-        [self stopBackgroundNFC];
-    }
-    [self saveConfig];
-}
-
 - (BOOL)hapticsEnabled {
     // Default to YES if missing
     if (!_config[@"hapticsEnabled"]) {

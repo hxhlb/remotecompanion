@@ -9,6 +9,7 @@
 @property (nonatomic, strong) UISwitch *masterSwitch;
 @property (nonatomic, strong) UISwitch *tcpSwitch;
 @property (nonatomic, strong) UISwitch *nfcSwitch;
+@property (nonatomic, strong) UISwitch *rootSwitch;
 @end
 
 @implementation RCSettingsViewController
@@ -151,7 +152,7 @@
             _tcpSwitch.on = [RCConfigManager sharedManager].tcpEnabled;
             [_tcpSwitch addTarget:self action:@selector(tcpToggleChanged:) forControlEvents:UIControlEventValueChanged];
             cell.accessoryView = _tcpSwitch;
-            cell.selectionStyle = UITableViewCellSelectionSelectionStyleNone;
+            cell.selectionStyle = UITableViewCellSelectionStyleNone;
         } else if (indexPath.row == 2) {
             cell.textLabel.text = @"NFC Scanning";
             _nfcSwitch = [[UISwitch alloc] init];
@@ -161,10 +162,10 @@
             cell.selectionStyle = UITableViewCellSelectionStyleNone;
         } else if (indexPath.row == 3) {
             cell.textLabel.text = @"Root Command";
-            _rootSwitch = [[UISwitch alloc] init];
-            _rootSwitch.on = [RCConfigManager sharedManager].rootEnabled;
-            [_rootSwitch addTarget:self action:@selector(rootToggleChanged:) forControlEvents:UIControlEventValueChanged];
-            cell.accessoryView = _rootSwitch;
+            self.rootSwitch = [[UISwitch alloc] init];
+            self.rootSwitch.on = [RCConfigManager sharedManager].rootEnabled;
+            [self.rootSwitch addTarget:self action:@selector(rootToggleChanged:) forControlEvents:UIControlEventValueChanged];
+            cell.accessoryView = self.rootSwitch;
             cell.selectionStyle = UITableViewCellSelectionStyleNone;
         }
     } else {
