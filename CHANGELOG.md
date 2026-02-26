@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.5] - 2026-02-26
+
+- Refactored project structure for better rootless and rootful compatibility.
+- Isolated `rc-root` tool into its own subproject.
+- Integrated the `RemoteCompanion` app as a subproject for a unified build process.
+- Optimized architectures: `arm64` for app/tool, `arm64 arm64e` for tweak.
+
 ## [2.2.4] - 2026-02-25
 
 ### Fixed
