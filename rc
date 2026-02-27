@@ -43,6 +43,7 @@ if [ -z "$1" ]; then
     echo "  rotate lock/unlock - Toggle orientation lock"
     echo "  is-locked         - Check if device is locked"
     echo "  dnd on/off/debug   - Toggle Do Not Disturb or inspect state"
+    echo "  blacklist <list|add|remove|reset> - Manage app exclusion"
     echo "  log               - Stream device logs"
     echo ""
     exit 1

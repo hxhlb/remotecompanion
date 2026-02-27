@@ -824,6 +824,77 @@ static NSString *find_config_path() {
     
     return nil;
 }
+// ============ BLACKLIST SYSTEM ============
+
+static NSArray *g_blacklist = nil;
+static NSTimeInterval g_lastBlacklistLoad = 0;
+
+static void load_blacklist() {
+    NSString *path = @"/var/mobile/Documents/rc_blacklist.plist";
+    g_blacklist = [NSArray arrayWithContentsOfFile:path];
+    if (!g_blacklist) {
+        // Default hardcoded fallback
+        g_blacklist = @[@"com.apple.compass", @"com.chase.richmond", @"com.chase.richmond.debug"];
+    }
+    g_lastBlacklistLoad = [[NSDate date] timeIntervalSince1970];
+}
+
+static BOOL save_blacklist(NSArray *list) {
+    NSString *path = @"/var/mobile/Documents/rc_blacklist.plist";
+    g_blacklist = [list copy];
+    g_lastBlacklistLoad = [[NSDate date] timeIntervalSince1970];
+    return [g_blacklist writeToFile:path atomically:YES];
+}
+
+static BOOL RC_IsForegroundAppExcluded() {
+    static BOOL cachedResult = NO;
+    static NSTimeInterval lastCheck = 0;
+    static NSString *lastBundleID = nil;
+    
+    NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
+    if (now - lastCheck < 0.5) {
+        return cachedResult;
+    }
+    
+    @autoreleasepool {
+        // Reload blacklist every 10 seconds or if never loaded
+        if (!g_blacklist || now - g_lastBlacklistLoad > 10.0) {
+            load_blacklist();
+        }
+
+        __block NSString *frontBundleID = nil;
+        void (^getBlock)(void) = ^{
+            SpringBoard *sb = (SpringBoard *)[UIApplication sharedApplication];
+            if (sb && [sb respondsToSelector:@selector(_accessibilityFrontMostApplication)]) {
+                SBApplication *frontApp = [sb _accessibilityFrontMostApplication];
+                frontBundleID = [frontApp bundleIdentifier];
+            }
+        };
+
+        if ([NSThread isMainThread]) getBlock();
+        else dispatch_sync(dispatch_get_main_queue(), getBlock);
+
+        BOOL result = NO;
+        if (frontBundleID) {
+            if (![frontBundleID isEqualToString:lastBundleID]) {
+                SRLog(@"Foreground App: %@", frontBundleID);
+                lastBundleID = frontBundleID;
+            }
+            
+            NSString *lowerID = [frontBundleID lowercaseString];
+            for (NSString *excluded in g_blacklist) {
+                if ([lowerID isEqualToString:[excluded lowercaseString]]) {
+                    result = YES;
+                    break;
+                }
+            }
+        }
+        
+        lastCheck = now;
+        cachedResult = result;
+        return result;
+    }
+}
 
 static void load_trigger_config() {
     @autoreleasepool {
@@ -1364,6 +1435,39 @@ static NSString *handle_command(NSString *cmd) {
         });
         
         return @"Dumping generic media state to logs...\n";
+    } else if ([cleanCmd hasPrefix:@"blacklist"]) {
+        NSArray *parts = [cleanCmd componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+        if (parts.count >= 2) {
+            NSString *sub = parts[1];
+            if (!g_blacklist) load_blacklist();
+            
+            if ([sub isEqualToString:@"list"]) {
+                return [NSString stringWithFormat:@"Blacklisted Apps:\n%@\n", [g_blacklist componentsJoinedByString:@"\n"]];
+            } else if ([sub isEqualToString:@"add"] && parts.count >= 3) {
+                NSString *newID = parts[2];
+                NSMutableArray *mList = [g_blacklist mutableCopy];
+                if (![mList containsObject:newID]) {
+                    [mList addObject:newID];
+                    if (save_blacklist(mList)) return [NSString stringWithFormat:@"Added %@ to blacklist\n", newID];
+                    return @"Error: Failed to save blacklist\n";
+                }
+                return [NSString stringWithFormat:@"%@ is already blacklisted\n", newID];
+            } else if ([sub isEqualToString:@"remove"] && parts.count >= 3) {
+                NSString *remID = parts[2];
+                NSMutableArray *mList = [g_blacklist mutableCopy];
+                if ([mList containsObject:remID]) {
+                    [mList removeObject:remID];
+                    if (save_blacklist(mList)) return [NSString stringWithFormat:@"Removed %@ from blacklist\n", remID];
+                    return @"Error: Failed to save blacklist\n";
+                }
+                return [NSString stringWithFormat:@"%@ was not in blacklist\n", remID];
+            } else if ([sub isEqualToString:@"reset"]) {
+                [[NSFileManager defaultManager] removeItemAtPath:@"/var/mobile/Documents/rc_blacklist.plist" error:nil];
+                load_blacklist();
+                return @"Blacklist reset to factory defaults\n";
+            }
+        }
+        return @"Usage: rc blacklist <list|add|remove|reset> [bundleID]\n";
     } else if ([cleanCmd isEqualToString:@"is-playing"] || [cleanCmd isEqualToString:@"player status"]) {
         __block NSString *status = @"Unknown";
         dispatch_semaphore_t sema = dispatch_semaphore_create(0);
