@@ -826,25 +826,7 @@ static NSString *find_config_path() {
 }
 // ============ BLACKLIST SYSTEM ============
 
-static NSArray *g_blacklist = nil;
-static NSTimeInterval g_lastBlacklistLoad = 0;
 
-static void load_blacklist() {
-    NSString *path = @"/var/mobile/Documents/rc_blacklist.plist";
-    g_blacklist = [NSArray arrayWithContentsOfFile:path];
-    if (!g_blacklist) {
-        // Default hardcoded fallback
-        g_blacklist = @[@"com.apple.compass", @"com.chase.richmond", @"com.chase.richmond.debug"];
-    }
-    g_lastBlacklistLoad = [[NSDate date] timeIntervalSince1970];
-}
-
-static BOOL save_blacklist(NSArray *list) {
-    NSString *path = @"/var/mobile/Documents/rc_blacklist.plist";
-    g_blacklist = [list copy];
-    g_lastBlacklistLoad = [[NSDate date] timeIntervalSince1970];
-    return [g_blacklist writeToFile:path atomically:YES];
-}
 
 static BOOL RC_IsForegroundAppExcluded() {
     static BOOL cachedResult = NO;
@@ -857,9 +839,17 @@ static BOOL RC_IsForegroundAppExcluded() {
     }
     
     @autoreleasepool {
-        // Reload blacklist every 10 seconds or if never loaded
-        if (!g_blacklist || now - g_lastBlacklistLoad > 10.0) {
-            load_blacklist();
+        static NSArray *blacklist = nil;
+        static NSTimeInterval lastLoad = 0;
+        
+        // Reload blacklist every 10 seconds to stay semi-dynamic
+        if (!blacklist || now - lastLoad > 10.0) {
+            NSString *path = @"/var/mobile/Documents/rc_blacklist.plist";
+            blacklist = [NSArray arrayWithContentsOfFile:path];
+            if (!blacklist) {
+                blacklist = @[@"com.apple.compass", @"com.chase.richmond", @"com.chase.richmond.debug"];
+            }
+            lastLoad = now;
         }
 
         __block NSString *frontBundleID = nil;
@@ -882,7 +872,7 @@ static BOOL RC_IsForegroundAppExcluded() {
             }
             
             NSString *lowerID = [frontBundleID lowercaseString];
-            for (NSString *excluded in g_blacklist) {
+            for (NSString *excluded in blacklist) {
                 if ([lowerID isEqualToString:[excluded lowercaseString]]) {
                     result = YES;
                     break;
@@ -1056,6 +1046,12 @@ static void register_simulation_observers() {
 
 // Execute all actions for a trigger
 void RCExecuteTrigger(NSString *triggerKey) {
+    // Check for foreground exclusions (Safety/Blacklist)
+    if (RC_IsForegroundAppExcluded()) {
+        SRLog(@"Triggers SUPPRESSED for frontmost application (Excluded/Blacklisted)");
+        return;
+    }
+
     if (!g_triggerConfig) {
         SRLog(@"Config missing, attempting to load...");
         load_trigger_config();
@@ -3458,6 +3454,7 @@ static BOOL g_bioWasLocked = NO;
 // Helper to trigger haptic feedback
 // Helper to trigger haptic feedback
 static void trigger_haptic() {
+    if (RC_IsForegroundAppExcluded()) return;
     AudioServicesPlaySystemSound(1520);
 }
 
@@ -3502,7 +3499,7 @@ static int g_lastRingerState = -1;
 %hook SBVolumeHardwareButtonActions
 
 - (void)volumeIncreasePressDownWithModifiers:(long long)arg1 {
-    if (g_volIsReplaying) {
+    if (g_volIsReplaying || RC_IsForegroundAppExcluded()) {
         %orig;
         return;
     }
@@ -3544,7 +3541,7 @@ static int g_lastRingerState = -1;
 
 - (void)volumeIncreasePressUp {
     g_volUpIsDown = NO;
-    if (g_volIsReplaying) {
+    if (g_volIsReplaying || RC_IsForegroundAppExcluded()) {
         %orig;
         return;
     }
@@ -3581,7 +3578,7 @@ static int g_lastRingerState = -1;
 }
 
 - (void)volumeDecreasePressDownWithModifiers:(long long)arg1 {
-    if (g_volIsReplaying) {
+    if (g_volIsReplaying || RC_IsForegroundAppExcluded()) {
         %orig;
         return;
     }
@@ -3623,7 +3620,7 @@ static int g_lastRingerState = -1;
 
 - (void)volumeDecreasePressUp {
     g_volDownIsDown = NO;
-    if (g_volIsReplaying) {
+    if (g_volIsReplaying || RC_IsForegroundAppExcluded()) {
         %orig;
         return;
     }
@@ -3707,6 +3704,7 @@ static IOHIDEventSystemClientRef g_hidClient = NULL;
 static void RC_CheckAndFire();
 
 static void RC_ProcessHomeClick() {
+    if (RC_IsForegroundAppExcluded()) return;
     g_homeClickCount++;
     SRLog(@"[HID] 🔵 CLICK DETECTED (Up)! Count: %d", g_homeClickCount);
     
@@ -3830,6 +3828,7 @@ static void RC_CheckAndFirePower() {
 }
 
 static void handle_hid_event(void* target, void* refcon, IOHIDEventSystemClientRef service, IOHIDEventRef event) {
+    if (RC_IsForegroundAppExcluded()) return;
     int type = IOHIDEventGetType(event);
     
     if (type == 29) { // Biometric Event (Finger on sensor)
@@ -4194,6 +4193,10 @@ static void setup_background_hid_listener() {
 %hook SBLockHardwareButtonActions
 
 - (void)performInitialButtonDownActions {
+    if (RC_IsForegroundAppExcluded()) {
+        %orig;
+        return;
+    }
     SRLog(@"performInitialButtonDownActions on %@", [self class]);
     // Removed g_powerBtnActive
     load_trigger_config();
@@ -4816,26 +4819,31 @@ static void update_edge_gestures() {
 %end
 
 %ctor {
-    %init(_ungrouped);
-    
-    SRLog(@"Tweak Loaded - Starting Initialization...");
-    
-    // Start Background HID Listener immediately (safe for NFC)
-    setup_background_hid_listener();
-    
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        SRLog(@"Delayed Initialization & Gesture Setup...");
+    NSString *bundleID = [[NSBundle mainBundle] bundleIdentifier];
+    if ([bundleID isEqualToString:@"com.apple.springboard"] || [bundleID isEqualToString:@"com.apple.calculator"]) {
+        %init(_ungrouped);
         
-        load_trigger_config();
-        register_config_observer();
-        register_simulation_observers();
-        start_server();
+        SRLog(@"Tweak Loaded in %@ - Starting Initialization...", bundleID);
         
-        // Conditionally register edge gestures based on config
-        update_edge_gestures();
+        // Start Background HID Listener immediately (safe for NFC)
+        setup_background_hid_listener();
         
-        SRLog(@"Initialization Complete.");
-    });
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            SRLog(@"Delayed Initialization & Gesture Setup...");
+            
+            load_trigger_config();
+            register_config_observer();
+            register_simulation_observers();
+            start_server();
+            
+            // Conditionally register edge gestures based on config
+            update_edge_gestures();
+            
+            SRLog(@"Initialization Complete.");
+        });
+    } else {
+        SRLog(@"Tweak Loaded in %@ - Skipping Full Initialization (Choicy Visibility Only)", bundleID);
+    }
 }
 
 
