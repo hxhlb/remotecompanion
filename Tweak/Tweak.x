@@ -423,6 +423,7 @@ void SRLog(NSString *format, ...) {
             @try {
                 [fileHandle seekToEndOfFile];
                 [fileHandle writeData:[logMsg dataUsingEncoding:NSUTF8StringEncoding]];
+                [fileHandle synchronizeFile]; // Force flush to disk
                 [fileHandle closeFile];
             } @catch (NSException *e) {}
         } else {
@@ -4438,33 +4439,63 @@ static BOOL g_statusBarSwipeTriggered = NO;
         UITouch *touch = [[event allTouches] anyObject];
         
         if (touch && touch.phase == UITouchPhaseBegan) {
+            UIWindow *window = nil;
+            #pragma clang diagnostic push
+            #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+            window = [UIApplication sharedApplication].keyWindow ?: [[UIApplication sharedApplication].windows firstObject];
+            #pragma clang diagnostic pop
+            UIInterfaceOrientation orientation = UIInterfaceOrientationPortrait;
+            
+            #pragma clang diagnostic push
+            #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+            if (window && window.windowScene) {
+                orientation = window.windowScene.interfaceOrientation;
+            } else {
+                orientation = [UIApplication sharedApplication].statusBarOrientation;
+            }
+            #pragma clang diagnostic pop
+
             CGPoint loc = [touch locationInView:nil];
-            CGFloat screenWidth = [[UIScreen mainScreen] bounds].size.width;
+            CGSize screenSize = [[UIScreen mainScreen] bounds].size;
             
-            // Status bar region = top 50pts
-            BOOL isStatusBarRegion = (loc.y < 50);
+            // Logic width/height (always portrait relative)
+            CGFloat lw = MIN(screenSize.width, screenSize.height);
+            CGFloat lh = MAX(screenSize.width, screenSize.height);
             
-            if (isStatusBarRegion) {
-                // Track swipe start position
+            // BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
+            
+            // Map coordinates and determine logic regions based on orientation
+            BOOL inTopRegion = NO;
+            BOOL inBottomRegion = NO;
+            
+            if (orientation == UIInterfaceOrientationPortrait) {
+                inTopRegion = (loc.y < 50);
+                inBottomRegion = (loc.y > lh - 50);
+            } else if (orientation == UIInterfaceOrientationPortraitUpsideDown) {
+                inTopRegion = (loc.y > lh - 50);
+                inBottomRegion = (loc.y < 50);
+            } else if (orientation == UIInterfaceOrientationLandscapeLeft) {
+                // Home button on right: Status bar is physically at X=0-50, Bottom bar at X=lw-50
+                inTopRegion = (loc.x < 50);
+                inBottomRegion = (loc.x > lw - 50);
+            } else if (orientation == UIInterfaceOrientationLandscapeRight) {
+                // Home button on left: Status bar is physically at X=lw-50, Bottom bar at X=0-50
+                inTopRegion = (loc.x > lw - 50);
+                inBottomRegion = (loc.x < 50);
+            }
+
+            SRLog(@"[Debug] TouchBegan phys=(%.1f, %.1f) orient=%ld (T=%d B=%d)", loc.x, loc.y, (long)orientation, inTopRegion, inBottomRegion);
+            
+            if (inTopRegion) {
                 g_statusBarSwipeStartX = loc.x;
                 g_statusBarSwipeStartY = loc.y;
                 g_statusBarTouchActive = YES;
                 g_statusBarSwipeHapticFired = NO;
                 g_statusBarSwipeTriggered = NO;
-                
-                // Hold zones: left (first 50pts), right (last 50pts), center (middle)
-                NSString *triggerKey = nil;
-                
-                if (loc.x < 50) {
-                    triggerKey = @"trigger_statusbar_left_hold";
-                } else if (loc.x > screenWidth - 50) {
-                    triggerKey = @"trigger_statusbar_right_hold";
-                } else {
-                    triggerKey = @"trigger_statusbar_center_hold";
-                }
-                
                 g_statusBarHoldTriggered = NO;
-                g_pendingStatusBarTrigger = triggerKey;
+                
+                // Set pending trigger based on orientation (usually just statusbar_hold)
+                g_pendingStatusBarTrigger = @"trigger_statusbar_hold";
                 
                 // Cancel any existing timer
                 if (g_statusBarHoldTimer) {
@@ -4492,135 +4523,108 @@ static BOOL g_statusBarSwipeTriggered = NO;
             }
             
             // Bottom bar region = bottom 50pts
-            CGFloat screenHeight = [[UIScreen mainScreen] bounds].size.height;
-            if (loc.y > screenHeight - 50) {
+            if (inBottomRegion) {
                 g_bottomBarSwipeStartX = loc.x;
                 g_bottomBarSwipeStartY = loc.y;
                 g_bottomBarTouchActive = YES;
                 g_bottomBarHapticFired = NO;
             }
         }
-        else if (touch && touch.phase == UITouchPhaseMoved) {
+        else if (touch && (touch.phase == UITouchPhaseMoved || touch.phase == UITouchPhaseEnded)) {
             CGPoint loc = [touch locationInView:nil];
+            UIWindow *window = nil;
+            #pragma clang diagnostic push
+            #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+            window = [UIApplication sharedApplication].keyWindow ?: [[UIApplication sharedApplication].windows firstObject];
+            #pragma clang diagnostic pop
+            UIInterfaceOrientation orientation = UIInterfaceOrientationPortrait;
+            #pragma clang diagnostic push
+            #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+            if (window && window.windowScene) orientation = window.windowScene.interfaceOrientation;
+            else orientation = [UIApplication sharedApplication].statusBarOrientation;
+            #pragma clang diagnostic pop
+
+            BOOL isEnded = (touch.phase == UITouchPhaseEnded);
             
-            // Status bar: Cancel hold timer if significant movement detected (it's a swipe, not a hold)
-            if (g_statusBarTouchActive && !g_statusBarHoldTriggered) {
-                CGFloat signedDeltaX = loc.x - g_statusBarSwipeStartX;
-                CGFloat deltaX = fabs(signedDeltaX);
-                CGFloat deltaY = fabs(loc.y - g_statusBarSwipeStartY);
+            if (g_statusBarTouchActive || g_bottomBarTouchActive) {
+                CGFloat startX = g_statusBarTouchActive ? g_statusBarSwipeStartX : g_bottomBarSwipeStartX;
+                CGFloat startY = g_statusBarTouchActive ? g_statusBarSwipeStartY : g_bottomBarSwipeStartY;
                 
-                // Cancel hold timer early if significant movement (10pts)
-                if ((deltaX > 10 || deltaY > 10) && g_statusBarHoldTimer) {
-                    [g_statusBarHoldTimer invalidate];
-                    g_statusBarHoldTimer = nil;
-                    g_pendingStatusBarTrigger = nil;
+                CGFloat dx_phys = loc.x - startX;
+                CGFloat dy_phys = loc.y - startY;
+                
+                CGFloat user_dx = 0;
+                CGFloat user_dy = 0;
+                
+                if (orientation == UIInterfaceOrientationPortrait) {
+                    user_dx = dx_phys; user_dy = dy_phys;
+                } else if (orientation == UIInterfaceOrientationPortraitUpsideDown) {
+                    user_dx = -dx_phys; user_dy = -dy_phys;
+                } else if (orientation == UIInterfaceOrientationLandscapeLeft) {
+                    user_dx = -dy_phys; user_dy = dx_phys;
+                } else if (orientation == UIInterfaceOrientationLandscapeRight) {
+                    user_dx = dy_phys; user_dy = -dx_phys;
                 }
 
-                // Swiping haptic logic (15pts threshold)
-                if (deltaX > 15 && !g_statusBarSwipeHapticFired) {
-                    NSString *swipeTrigger = (signedDeltaX > 0) ? @"trigger_statusbar_swipe_right" : @"trigger_statusbar_swipe_left";
-                    
-                    load_trigger_config();
-                    BOOL enabled = [g_triggerConfig[@"masterEnabled"] boolValue] && 
-                                   [g_triggerConfig[@"triggers"][swipeTrigger][@"enabled"] boolValue];
-                    
-                    if (enabled) {
-                        trigger_haptic();
-                        SRLog(@"Status Bar Haptic FIRE (deltaX=%.2f)", deltaX);
+                CGFloat abs_udx = fabs(user_dx);
+                CGFloat abs_udy = fabs(user_dy);
+                BOOL isHoz = (abs_udx > abs_udy * 2.0);
+                
+                // --- Status Bar Moves ---
+                if (g_statusBarTouchActive && !g_statusBarHoldTriggered) {
+                    if ((abs_udx > 15 || abs_udy > 15) && g_statusBarHoldTimer) {
+                        [g_statusBarHoldTimer invalidate];
+                        g_statusBarHoldTimer = nil;
                     }
-                    g_statusBarSwipeHapticFired = YES;
-                }
-
-                // Robust Fire (Moved phase, 50pts threshold)
-                if (deltaX > 50 && deltaY < 150 && !g_statusBarSwipeTriggered) {
-                    NSString *swipeTrigger = (signedDeltaX > 0) ? @"trigger_statusbar_swipe_right" : @"trigger_statusbar_swipe_left";
-                    load_trigger_config();
-                    if ([g_triggerConfig[@"masterEnabled"] boolValue] && [g_triggerConfig[@"triggers"][swipeTrigger][@"enabled"] boolValue]) {
-                        RCExecuteTrigger(swipeTrigger);
-                        SRLog(@"Status Bar %@ FIRED (Instant)!", swipeTrigger);
+                    
+                    if (isHoz && abs_udx > 15 && !g_statusBarSwipeHapticFired) {
+                        NSString *trigger = (user_dx > 0) ? @"trigger_statusbar_swipe_right" : @"trigger_statusbar_swipe_left";
+                        load_trigger_config();
+                        if ([g_triggerConfig[@"masterEnabled"] boolValue] && [g_triggerConfig[@"triggers"][trigger][@"enabled"] boolValue]) {
+                            trigger_haptic();
+                        }
+                        g_statusBarSwipeHapticFired = YES;
+                    }
+                    
+                    if (!g_statusBarSwipeTriggered && isHoz && abs_udx > 50) {
+                        NSString *trigger = (user_dx > 0) ? @"trigger_statusbar_swipe_right" : @"trigger_statusbar_swipe_left";
+                        RCExecuteTrigger(trigger);
                         g_statusBarSwipeTriggered = YES;
                     }
                 }
-            }
-
-            // Bottom bar: Check for horizontal swipe movement for haptic feedback
-            if (g_bottomBarTouchActive && !g_bottomBarHapticFired) {
-                CGFloat signedDeltaX = loc.x - g_bottomBarSwipeStartX;
-                CGFloat absDeltaX = fabs(signedDeltaX);
                 
-                if (absDeltaX > 15) { // Lowered from 30 to 15 for snappier feedback
-                    NSString *swipeTrigger = (signedDeltaX > 0) ? @"trigger_bottombar_swipe_right" : @"trigger_bottombar_swipe_left";
-                    
-                    load_trigger_config();
-                    BOOL enabled = [g_triggerConfig[@"masterEnabled"] boolValue] && 
-                                   [g_triggerConfig[@"triggers"][swipeTrigger][@"enabled"] boolValue];
-
-                    if (enabled) {
-                        trigger_haptic();
-                        SRLog(@"Bottom Bar Haptic FIRE (deltaX=%.2f)", absDeltaX);
-                    }
-                    g_bottomBarHapticFired = YES;
-                }
-            }
-        }
-        else if (touch && touch.phase == UITouchPhaseEnded) {
-            CGPoint loc = [touch locationInView:nil];
-            
-            // Status bar swipe check (fallback if not already triggered in Moved)
-            if (g_statusBarTouchActive && !g_statusBarHoldTriggered && !g_statusBarSwipeTriggered) {
-                CGFloat deltaX = loc.x - g_statusBarSwipeStartX;
-                CGFloat deltaY = fabs(loc.y - g_statusBarSwipeStartY);
-                
-                // Fallback threshold: 40pts horizontal, less than 150pts vertical
-                if (fabs(deltaX) > 40 && deltaY < 150) {
-                    NSString *swipeTrigger = (deltaX > 0) ? @"trigger_statusbar_swipe_right" : @"trigger_statusbar_swipe_left";
-                    
-                    load_trigger_config();
-                    BOOL enabled = [g_triggerConfig[@"masterEnabled"] boolValue] && 
-                                   [g_triggerConfig[@"triggers"][swipeTrigger][@"enabled"] boolValue];
-                    
-                    if (enabled) {
-                        RCExecuteTrigger(swipeTrigger);
-                        SRLog(@"%@ FIRED (Fallback)!", swipeTrigger);
-                        g_statusBarSwipeTriggered = YES;
+                // --- Bottom Bar Moves ---
+                if (g_bottomBarTouchActive && !g_bottomBarHapticFired) {
+                    if (isHoz && abs_udx > 15) {
+                        NSString *trigger = (user_dx > 0) ? @"trigger_bottombar_swipe_right" : @"trigger_bottombar_swipe_left";
+                        load_trigger_config();
+                        if ([g_triggerConfig[@"masterEnabled"] boolValue] && [g_triggerConfig[@"triggers"][trigger][@"enabled"] boolValue]) {
+                            trigger_haptic();
+                        }
+                        g_bottomBarHapticFired = YES;
                     }
                 }
+                
+                // --- Gesture Finalized ---
+                if (isEnded) {
+                    if (g_statusBarTouchActive && !g_statusBarHoldTriggered && !g_statusBarSwipeTriggered) {
+                        if (isHoz && abs_udx > 40) {
+                            NSString *trigger = (user_dx > 0) ? @"trigger_statusbar_swipe_right" : @"trigger_statusbar_swipe_left";
+                            RCExecuteTrigger(trigger);
+                        }
+                    }
+                    if (g_bottomBarTouchActive) {
+                        if (isHoz && abs_udx > 60) {
+                            NSString *trigger = (user_dx > 0) ? @"trigger_bottombar_swipe_right" : @"trigger_bottombar_swipe_left";
+                            RCExecuteTrigger(trigger);
+                        }
+                    }
+                    SRLog(@"[Debug] Ended: user_dx=%.1f user_dy=%.1f orient=%ld isHoz=%d", user_dx, user_dy, (long)orientation, isHoz);
+                    g_statusBarTouchActive = NO;
+                    g_bottomBarTouchActive = NO;
+                    g_statusBarHoldTriggered = NO;
+                }
             }
-            
-            // Bottom bar swipe check
-            if (g_bottomBarTouchActive) { // Allow firing even if haptic already fired
-                 CGFloat deltaX = loc.x - g_bottomBarSwipeStartX;
-                 CGFloat deltaY = fabs(loc.y - g_bottomBarSwipeStartY);
-
-                 // Swipe threshold: 60pts horizontal (relaxed), less than 100pts vertical (relaxed for arcs)
-                 // Note: Native home swipe is strictly horizontal/vertical mix, but usually starts at very bottom. 
-                 // We rely on our > 30pt haptic feedback to signal "we got it"
-                 if (fabs(deltaX) > 60 && deltaY < 120) {
-                     NSString *swipeTrigger = (deltaX > 0) ? @"trigger_bottombar_swipe_right" : @"trigger_bottombar_swipe_left";
-                     
-                     load_trigger_config();
-                     BOOL enabled = [g_triggerConfig[@"masterEnabled"] boolValue] && 
-                                    [g_triggerConfig[@"triggers"][swipeTrigger][@"enabled"] boolValue];
-                     
-                     if (enabled) {
-                         RCExecuteTrigger(swipeTrigger);
-                         SRLog(@"%@ FIRED!", swipeTrigger);
-                     }
-                 }
-            }
-            
-            // Clean up status bar
-            if (g_statusBarHoldTimer) {
-                [g_statusBarHoldTimer invalidate];
-                g_statusBarHoldTimer = nil;
-            }
-            g_statusBarHoldTriggered = NO;
-            g_pendingStatusBarTrigger = nil;
-            g_statusBarTouchActive = NO;
-            
-            // Clean up bottom bar
-            g_bottomBarTouchActive = NO;
-            g_bottomBarHapticFired = NO;
         }
         else if (touch && touch.phase == UITouchPhaseCancelled) {
             if (g_statusBarHoldTimer) {
@@ -4630,8 +4634,6 @@ static BOOL g_statusBarSwipeTriggered = NO;
             g_statusBarHoldTriggered = NO;
             g_pendingStatusBarTrigger = nil;
             g_statusBarTouchActive = NO;
-            
-            // Clean up bottom bar
             g_bottomBarTouchActive = NO;
             g_bottomBarHapticFired = NO;
         }
