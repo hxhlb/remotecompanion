@@ -834,7 +834,7 @@ static void load_blacklist() {
     g_blacklist = [NSArray arrayWithContentsOfFile:path];
     if (!g_blacklist) {
         // Default hardcoded fallback
-        g_blacklist = @[@"com.apple.compass", @"com.chase", @"com.chase.richmond", @"com.chase.richmond.debug"];
+        g_blacklist = @[@"com.apple.compass", @"com.chase"];
     }
     g_lastBlacklistLoad = [[NSDate date] timeIntervalSince1970];
 }
