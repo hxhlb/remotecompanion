@@ -826,7 +826,25 @@ static NSString *find_config_path() {
 }
 // ============ BLACKLIST SYSTEM ============
 
+static NSArray *g_blacklist = nil;
+static NSTimeInterval g_lastBlacklistLoad = 0;
 
+static void load_blacklist() {
+    NSString *path = @"/var/mobile/Documents/rc_blacklist.plist";
+    g_blacklist = [NSArray arrayWithContentsOfFile:path];
+    if (!g_blacklist) {
+        // Default hardcoded fallback
+        g_blacklist = @[@"com.apple.compass", @"com.chase", @"com.chase.richmond", @"com.chase.richmond.debug"];
+    }
+    g_lastBlacklistLoad = [[NSDate date] timeIntervalSince1970];
+}
+
+static BOOL save_blacklist(NSArray *list) {
+    NSString *path = @"/var/mobile/Documents/rc_blacklist.plist";
+    g_blacklist = [list copy];
+    g_lastBlacklistLoad = [[NSDate date] timeIntervalSince1970];
+    return [g_blacklist writeToFile:path atomically:YES];
+}
 
 static BOOL RC_IsForegroundAppExcluded() {
     static BOOL cachedResult = NO;
@@ -839,17 +857,9 @@ static BOOL RC_IsForegroundAppExcluded() {
     }
     
     @autoreleasepool {
-        static NSArray *blacklist = nil;
-        static NSTimeInterval lastLoad = 0;
-        
-        // Reload blacklist every 10 seconds to stay semi-dynamic
-        if (!blacklist || now - lastLoad > 10.0) {
-            NSString *path = @"/var/mobile/Documents/rc_blacklist.plist";
-            blacklist = [NSArray arrayWithContentsOfFile:path];
-            if (!blacklist) {
-                blacklist = @[@"com.apple.compass", @"com.chase.richmond", @"com.chase.richmond.debug"];
-            }
-            lastLoad = now;
+        // Reload blacklist every 10 seconds or if never loaded
+        if (!g_blacklist || now - g_lastBlacklistLoad > 10.0) {
+            load_blacklist();
         }
 
         __block NSString *frontBundleID = nil;
@@ -872,7 +882,7 @@ static BOOL RC_IsForegroundAppExcluded() {
             }
             
             NSString *lowerID = [frontBundleID lowercaseString];
-            for (NSString *excluded in blacklist) {
+            for (NSString *excluded in g_blacklist) {
                 if ([lowerID isEqualToString:[excluded lowercaseString]]) {
                     result = YES;
                     break;
@@ -1698,29 +1708,47 @@ static NSString *handle_command(NSString *cmd) {
                      
                      if (WFWorkflowDescriptorClass && WFWorkflowRunnerClientClass) {
                          SRLog(@"WorkflowKit loaded, preparing to run shortcut: %@", shortcutName);
-                         id descriptor = [[WFWorkflowDescriptorClass alloc] initWithName:shortcutName];
-                         
-                         WFWorkflowRunnerClient *client = (WFWorkflowRunnerClient *)[[WFWorkflowRunnerClientClass alloc] initWithWorkflowDescriptor:descriptor 
-                                                                                               input:nil 
-                                                                                          parseInput:NO 
-                                                                                              output:nil 
-                                                                                          completion:^(id output, NSError *error) {
-                             if (error) {
-                                 SRLog(@"Shortcut '%@' failed: %@", shortcutName, error);
+                         id descriptor = [WFWorkflowDescriptorClass alloc];
+                         if ([descriptor respondsToSelector:@selector(initWithName:)]) {
+                             descriptor = [descriptor initWithName:shortcutName];
+                         } else {
+                             SRLog(@"[RemoteCommand] WFWorkflowDescriptor missing initWithName:, attempting identifier fallback");
+                             SEL sel = NSSelectorFromString(@"initWithIdentifier:");
+                             if ([descriptor respondsToSelector:sel]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+                                 descriptor = [descriptor performSelector:sel withObject:shortcutName];
+#pragma clang diagnostic pop
                              } else {
-                                 SRLog(@"Shortcut '%@' completed successfully", shortcutName);
+                                 descriptor = nil;
                              }
-                         }];
-                         
-                         if (client) {
-                             [client start];
-                             SRLog(@"Started WFWorkflowRunnerClient for '%@'", shortcutName);
-                             return; // Success, exit block!
                          }
-                     }
-                 }
-                 
-                 // Fallback to springcuts CLI if WorkflowKit approach fails
+
+                         if (descriptor) {
+                             WFWorkflowRunnerClient *client = (WFWorkflowRunnerClient *)[[WFWorkflowRunnerClientClass alloc] initWithWorkflowDescriptor:descriptor 
+                                                                                                   input:nil 
+                                                                                              parseInput:NO 
+                                                                                                  output:nil 
+                                                                                              completion:^(id output, NSError *error) {
+                                 if (error) {
+                                     SRLog(@"Shortcut '%@' failed: %@", shortcutName, error);
+                                 } else {
+                                     SRLog(@"Shortcut '%@' completed successfully", shortcutName);
+                                 }
+                             }];
+                             
+                             if (client) {
+                                 [client start];
+                                 SRLog(@"Started WFWorkflowRunnerClient for '%@'", shortcutName);
+                                 return; // Success, exit block!
+                             }
+                         } else {
+                             SRLog(@"[RemoteCommand] Failed to create descriptor for shortcut: %@", shortcutName);
+                         }
+                      }
+                  }
+                  
+                  // Fallback to springcuts CLI if WorkflowKit approach fails
                  SRLog(@"WorkflowKit execution unavailable, falling back to springcuts...");
                  NSMutableArray *args = [NSMutableArray array];
                  
@@ -2930,11 +2958,12 @@ static NSString *handle_command(NSString *cmd) {
             SRLog(@"Delaying for %.2f seconds...", seconds);
             usleep((useconds_t)(seconds * 1000000));
         }
-        return nil;
+        return [NSString stringWithFormat:@"Delayed for %.2f seconds\n", seconds];
+    } else if ([cleanCmd hasPrefix:@"root "] || [cleanCmd hasPrefix:@"sudo "]) {
         // Execute command as root via setuid helper
         NSString *shellCmd = [cleanCmd hasPrefix:@"root "]
             ? [[cleanCmd substringFromIndex:5] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
-            : [[cleanCmd substringFromIndex:10] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            : [[cleanCmd substringFromIndex:5] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         
         load_trigger_config();
         BOOL rootEnabled = NO;
@@ -3216,29 +3245,47 @@ static NSString *handle_command(NSString *cmd) {
                      
                      if (WFWorkflowDescriptorClass && WFWorkflowRunnerClientClass) {
                          SRLog(@"WorkflowKit loaded, preparing to run shortcut: %@", shortcutName);
-                         id descriptor = [[WFWorkflowDescriptorClass alloc] initWithName:shortcutName];
-                         
-                         WFWorkflowRunnerClient *client = (WFWorkflowRunnerClient *)[[WFWorkflowRunnerClientClass alloc] initWithWorkflowDescriptor:descriptor 
-                                                                                               input:nil 
-                                                                                          parseInput:NO 
-                                                                                              output:nil 
-                                                                                          completion:^(id output, NSError *error) {
-                             if (error) {
-                                 SRLog(@"Shortcut '%@' failed: %@", shortcutName, error);
+                         id descriptor = [WFWorkflowDescriptorClass alloc];
+                         if ([descriptor respondsToSelector:@selector(initWithName:)]) {
+                             descriptor = [descriptor initWithName:shortcutName];
+                         } else {
+                             SRLog(@"[RemoteCommand] WFWorkflowDescriptor missing initWithName:, attempting identifier fallback");
+                             SEL sel = NSSelectorFromString(@"initWithIdentifier:");
+                             if ([descriptor respondsToSelector:sel]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+                                 descriptor = [descriptor performSelector:sel withObject:shortcutName];
+#pragma clang diagnostic pop
                              } else {
-                                 SRLog(@"Shortcut '%@' completed successfully", shortcutName);
+                                 descriptor = nil;
                              }
-                         }];
-                         
-                         if (client) {
-                             [client start];
-                             SRLog(@"Started WFWorkflowRunnerClient for '%@'", shortcutName);
-                             return; // Success, exit block!
                          }
-                     }
-                 }
-                 
-                 // Fallback to springcuts CLI if WorkflowKit approach fails
+
+                         if (descriptor) {
+                             WFWorkflowRunnerClient *client = (WFWorkflowRunnerClient *)[[WFWorkflowRunnerClientClass alloc] initWithWorkflowDescriptor:descriptor 
+                                                                                                   input:nil 
+                                                                                              parseInput:NO 
+                                                                                                  output:nil 
+                                                                                              completion:^(id output, NSError *error) {
+                                 if (error) {
+                                     SRLog(@"Shortcut '%@' failed: %@", shortcutName, error);
+                                 } else {
+                                     SRLog(@"Shortcut '%@' completed successfully", shortcutName);
+                                 }
+                             }];
+                             
+                             if (client) {
+                                 [client start];
+                                 SRLog(@"Started WFWorkflowRunnerClient for '%@'", shortcutName);
+                                 return; // Success, exit block!
+                             }
+                         } else {
+                             SRLog(@"[RemoteCommand] Failed to create descriptor for shortcut: %@", shortcutName);
+                         }
+                      }
+                  }
+                  
+                  // Fallback to springcuts CLI if WorkflowKit approach fails
                  SRLog(@"WorkflowKit execution unavailable, falling back to springcuts...");
                  Class NSTaskClass = NSClassFromString(@"NSTask");
                  if (NSTaskClass) {
@@ -3912,7 +3959,10 @@ static void handle_hid_event(void* target, void* refcon, IOHIDEventSystemClientR
                 // Track initial lock state
                 Class LSMC = objc_getClass("SBLockScreenManager");
                 SBLockScreenManager *lsm = LSMC ? [LSMC sharedInstance] : nil;
-                g_bioWasLocked = lsm ? [lsm isUILocked] : NO;
+                g_bioWasLocked = NO;
+                if (lsm && [lsm respondsToSelector:@selector(isUILocked)]) {
+                    g_bioWasLocked = [lsm isUILocked];
+                }
 
                 
                 if (g_bioWatchdogTimer) [g_bioWatchdogTimer invalidate];
