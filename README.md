@@ -127,7 +127,7 @@ RemoteCompanion v2.2 introduces a powerful Lua bridge that allows you to execute
 | `dlopen(path)` | Loads a dynamic library. Returns `true` on success. |
 | `objc_call(target, selector, args...)` | Calls an Objective-C method. `target` can be a class name string or an instance. |
 
-### Example
+### Examples
 
 **Trigger Haptic and Log**
 ```lua
@@ -137,6 +137,37 @@ delay(0.2)
 haptic()
 log("Finished haptic feedback.")
 ```
+
+**Call a Class Method (get a shared instance)**
+```lua
+-- objc_call(className, selector) returns an instance
+local device = objc_call("UIDevice", "currentDevice")
+if device then
+    objc_call(device, "setBatteryMonitoringEnabled:", true)
+    local level = objc_call(device, "batteryLevel")
+    log("Battery: " .. tostring(level * 100) .. "%")
+end
+```
+
+**Load a Private Framework or Dylib**
+```lua
+-- Load your dylib first, then call methods on it
+local ok = dlopen("/path/to/yourlibrary.dylib")
+if ok then
+    -- Use a shared accessor if the class provides one
+    local instance = objc_call("YourClass", "sharedInstance")
+    if instance then
+        objc_call(instance, "yourMethod")
+    else
+        -- Or allocate a new instance
+        local obj = objc_call(objc_call("YourClass", "alloc"), "init")
+        objc_call(obj, "yourMethod")
+    end
+end
+```
+
+> [!NOTE]
+> `objc_call` works like standard Objective-C messaging — it does not scan memory for existing instances. To call an instance method, you first need to obtain the instance via a class-level accessor (e.g. `sharedInstance`, `currentDevice`) or by allocating a new one with `alloc`/`init`.
 
 </details>
 
