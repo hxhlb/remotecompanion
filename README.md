@@ -20,7 +20,7 @@ RemoteCompanion provides fast, scriptable system control for modern rootless jai
 </p>
 
 ## Features
-- **Instant Response**: High-speed command execution (~0.25s) using optimized TCP probes on port `12340`.
+- **Instant Response**: High-speed command execution (~0.2s) using optimized SSH-tunneled UNIX domain sockets.
 - **Smart Control**: Run multi-step action sequences, edit existing actions inline, or control settings remotely.
 - **Hardware Triggers**: Bind actions to Power/Volume buttons, Home button, Touch ID (Tap/Hold), or the Ringer Switch.
 - **Visual Excellence**: Modern iOS aesthetics with Large Titles, SF Symbols, and a professional dark terminal editor.
@@ -215,11 +215,8 @@ Download the `.deb` from [Releases](https://github.com/saihgupr/remotecompanion/
 ### 3. Usage Options
 Choose the control method that best fits your needs:
 
-#### Option 1: TCP Server (Fastest)
-Control your iPhone from your computer terminal using the `rc` script.
-
-> [!NOTE]
-> This method is **faster** than SSH because it avoids the encryption handshake overhead. Recommended for low-latency triggers. **Requires "TCP Server" enabled in app settings.**
+#### Option 1: CLI (Easiest)
+Control your iPhone from your computer terminal using the `rc` script. It uses SSH to securely tunnel commands into a local UNIX socket on the device.
 
 1. Copy the script to your path:
    ```bash
@@ -228,7 +225,7 @@ Control your iPhone from your computer terminal using the `rc` script.
    ```
 2. Set your iPhone's IP (add this to your `~/.zshrc`):
    ```bash
-   export RC_IPHONE_IP=192.168.1.10
+   export RC_IPHONE_IP=iphone.local
    ```
 3. Run the command:
    ```bash
@@ -274,11 +271,12 @@ If you have **Powercuts** installed, you can run `rc` commands directly via shel
 <details>
 <summary><h3>Home Assistant Setup</h3></summary>
 
-Add this to your `configuration.yaml`:
+The most reliable way to control your device from Home Assistant is via SSH.
+
 ```yaml
 shell_command:
   iphone_remote: >
-    bash -c 'echo '\''{{ cmd }}'\'' > /dev/tcp/YOUR_IPHONE_IP/12340'
+    ssh -o "StrictHostKeyChecking=no" mobile@YOUR_IPHONE_IP "rc {{ cmd }}"
 ```
 Then call it with:
 
@@ -295,11 +293,11 @@ data:
 RemoteCompanion implements several measures to ensure your device remains secure:
 
 ### Security
-RemoteCompanion's External TCP Server (ports 12340-12344) is designed for speed and convenience within a trusted local network.
+RemoteCompanion has moved from a public TCP listener to a **UNIX Domain Socket** (`/var/mobile/Documents/rc.sock`).
 
-- **Enablement**: The server must be explicitly enabled in the app settings under "TCP Server".
-- **Local Network**: It is recommended to use the TCP server only on trusted home networks.
-- **SSH Support**: For secure remote access over the internet, we recommend using SSH (which is enabled by default on jailbroken devices). The `rc` script will automatically fallback to SSH if the direction connection is unavailable.
+- **No Open Ports**: The tweak no longer listens on any network ports.
+- **Encrypted by Default**: Remote access is strictly handled via **SSH**, meaning every command is encrypted and authenticated.
+- **Local Access**: Local apps and the `rc` CLI on the device communicate directly with the socket file, ensuring zero network exposure.
 
 ### Root Access Control
 The "Root Command" feature must be explicitly enabled in the app settings.

@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.6] - 2026-03-03
+
+### Added
+- **UNIX Domain Socket IPC**: Migrated the internal server from TCP to a secure UNIX domain socket (`/var/mobile/Documents/rc.sock`). This eliminates port conflicts and prevents external network exposure.
+- **SSH-Tunneled CLI**: The `rc` script now automatically tunnels commands over SSH to the local socket on the device.
+- **Improved Command Acknowledgments**: Added explicit response strings to media, flashlight, and haptic commands to ensure the CLI receives proper feedback.
+- **New Ping Command**: A dedicated `rc ping` command that plays an alert sound on the device and returns a confirmation string.
+
+### Fixed
+- **CLI Robustness**: Refined the `rc` script to handle rootless and rootful paths more reliably, and optimized command delivery across all jailbreak environments.
+- **Networking Stability**: Fixed intermittent connection failures caused by "TCP Server" port exhaustion or conflicts.
+
 ## [2.2.5] - 2026-02-26
 
 - Refactored project structure for better rootless and rootful compatibility.
