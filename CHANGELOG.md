@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.2.6] - 2026-03-03
+## [2.3.0-beta.1] - 2026-03-03
+
+### Changed
+- **Settings Simplification**: Removed "TCP Server" and "Root Command" switches from the app settings. These features are now enabled by default to simplify configuration.
+- **Root Access Control**: Removed the requirement to manually enable root commands in settings.
 
 ### Added
 - **UNIX Domain Socket IPC**: Migrated the internal server from TCP to a secure UNIX domain socket (`/var/mobile/Documents/rc.sock`). This eliminates port conflicts and prevents external network exposure.
