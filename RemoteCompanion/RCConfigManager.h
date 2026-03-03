@@ -11,6 +11,7 @@
 + (instancetype)sharedManager;
 
 - (NSArray<NSString *> *)allTriggerKeys;
+- (NSArray<NSString *> *)allConfiguredTriggerKeys;
 - (NSString *)displayNameForTrigger:(NSString *)triggerKey;
 - (BOOL)isTriggerEnabled:(NSString *)triggerKey;
 - (void)setTriggerEnabled:(BOOL)enabled forTrigger:(NSString *)triggerKey;

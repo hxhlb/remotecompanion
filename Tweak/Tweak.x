@@ -241,6 +241,7 @@ extern Boolean MRMediaRemoteSendCommandToApp(MRMediaRemoteCommand command, NSDic
 + (instancetype)sharedInstance;
 - (void)setWiFiEnabled:(BOOL)enabled;
 - (BOOL)wiFiEnabled;
+- (id)currentNetworkName;
 @end
 
 // MediaRemote APIs - these are stable and work on iOS 15.8
@@ -1262,6 +1263,72 @@ BOOL RCIsNFCEnabled() {
         return YES;
     }
     return [g_triggerConfig[@"nfcEnabled"] boolValue];
+}
+
+// ============ SYSTEM EVENT HANDLERS (WiFi/BT Triggers) ============
+
+static NSString *g_lastKnownSSID = nil;
+
+static void handle_wifi_transition() {
+    SBWiFiManager *wifiManager = [objc_getClass("SBWiFiManager") sharedInstance];
+    NSString *currentSSID = [wifiManager currentNetworkName];
+    
+    SRLog(@"[RCWiFi] Transition detected. Current SSID: %@ (Previous: %@)", currentSSID, g_lastKnownSSID);
+    
+    if (currentSSID && ![currentSSID isEqualToString:g_lastKnownSSID]) {
+        // Connected to a new network
+        NSString *triggerKey = [NSString stringWithFormat:@"wifi_connect_%@", currentSSID];
+        SRLog(@"[RCWiFi] Connection trigger: %@", triggerKey);
+        RCExecuteTrigger(triggerKey);
+    } else if (!currentSSID && g_lastKnownSSID) {
+        // Disconnected from previous network
+        NSString *triggerKey = [NSString stringWithFormat:@"wifi_disconnect_%@", g_lastKnownSSID];
+        SRLog(@"[RCWiFi] Disconnection trigger: %@", triggerKey);
+        RCExecuteTrigger(triggerKey);
+    }
+    
+    g_lastKnownSSID = [currentSSID copy];
+}
+
+static void handle_bluetooth_transition(NSNotification *notification, BOOL connected) {
+    BluetoothDevice *device = notification.object;
+    if (![device isKindOfClass:objc_getClass("BluetoothDevice")]) return;
+    
+    NSString *address = [device address];
+    NSString *name = [device name];
+    SRLog(@"[RCBT] Device %@ (%@) %@", name, address, connected ? @"Connected" : @"Disconnected");
+    
+    NSString *triggerKey = [NSString stringWithFormat:@"%@_%@", connected ? @"bt_connect" : @"bt_disconnect", address];
+    RCExecuteTrigger(triggerKey);
+}
+
+static void register_system_event_observers() {
+    NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
+    
+    // WiFi: Track network changes (SBWiFiManagerPosts this)
+    [nc addObserverForName:@"SBWiFiManagerCurrentNetworkDidChangeNotification" 
+                    object:nil 
+                     queue:[NSOperationQueue mainQueue] 
+                usingBlock:^(NSNotification *note) {
+        handle_wifi_transition();
+    }];
+    
+    // Bluetooth: Track connection/disconnection
+    [nc addObserverForName:@"BluetoothDeviceConnectSuccessNotification" 
+                    object:nil 
+                     queue:[NSOperationQueue mainQueue] 
+                usingBlock:^(NSNotification *note) {
+        handle_bluetooth_transition(note, YES);
+    }];
+    
+    [nc addObserverForName:@"BluetoothDeviceDisconnectSuccessNotification" 
+                    object:nil 
+                     queue:[NSOperationQueue mainQueue] 
+                usingBlock:^(NSNotification *note) {
+        handle_bluetooth_transition(note, NO);
+    }];
+
+    SRLog(@"[RCTweak] WiFi and Bluetooth observers registered.");
 }
 
 // ============ LUA INTERPRETER ============
@@ -4983,6 +5050,7 @@ static void update_edge_gestures() {
             load_trigger_config();
             register_config_observer();
             register_simulation_observers();
+            register_system_event_observers(); // WiFi/BT Triggers
             start_server();
             
             // Conditionally register edge gestures based on config
