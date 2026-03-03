@@ -4658,8 +4658,27 @@ static BOOL g_statusBarSwipeTriggered = NO;
                 g_statusBarSwipeTriggered = NO;
                 g_statusBarHoldTriggered = NO;
                 
-                // Set pending trigger based on orientation (usually just statusbar_hold)
-                g_pendingStatusBarTrigger = @"trigger_statusbar_hold";
+                // Determine region for status bar hold (Left, Center, Right)
+                CGFloat progress = 0;
+                if (orientation == UIInterfaceOrientationPortrait) {
+                    progress = loc.x / lw;
+                } else if (orientation == UIInterfaceOrientationPortraitUpsideDown) {
+                    progress = 1.0 - (loc.x / lw);
+                } else if (orientation == UIInterfaceOrientationLandscapeLeft) {
+                    progress = 1.0 - (loc.y / lh);
+                } else if (orientation == UIInterfaceOrientationLandscapeRight) {
+                    progress = loc.y / lh;
+                }
+                
+                if (progress < 0.33) {
+                    g_pendingStatusBarTrigger = @"trigger_statusbar_left_hold";
+                } else if (progress > 0.66) {
+                    g_pendingStatusBarTrigger = @"trigger_statusbar_right_hold";
+                } else {
+                    g_pendingStatusBarTrigger = @"trigger_statusbar_center_hold";
+                }
+                
+                SRLog(@"[RCStatus] Top Region Touch at progress=%.2f -> Key: %@", progress, g_pendingStatusBarTrigger);
                 
                 // Cancel any existing timer
                 if (g_statusBarHoldTimer) {
