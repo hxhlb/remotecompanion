@@ -90,7 +90,7 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
         
         // Auto-add tcpEnabled if missing
         if (_config[@"tcpEnabled"] == nil) {
-            _config[@"tcpEnabled"] = @NO;
+            _config[@"tcpEnabled"] = @YES;
             [self saveConfig];
         }
         
@@ -102,7 +102,7 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
 
         // Auto-add rootEnabled if missing
         if (_config[@"rootEnabled"] == nil) {
-            _config[@"rootEnabled"] = @NO;
+            _config[@"rootEnabled"] = @YES;
             [self saveConfig];
         }
 
@@ -116,9 +116,9 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
         NSLog(@"[RCConfigManager] Using default config");
         _config = [@{
             @"masterEnabled": @YES,
-            @"tcpEnabled": @NO,
+            @"tcpEnabled": @YES,
             @"nfcEnabled": @YES,
-            @"rootEnabled": @NO,
+            @"rootEnabled": @YES,
             @"triggers": [@{
                 @"volume_up_hold": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
                 @"volume_down_hold": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],

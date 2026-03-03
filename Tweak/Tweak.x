@@ -2981,18 +2981,6 @@ static NSString *handle_command(NSString *cmd) {
             ? [[cleanCmd substringFromIndex:5] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]
             : [[cleanCmd substringFromIndex:5] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         
-        load_trigger_config();
-        BOOL rootEnabled = NO;
-        if (g_triggerConfig) {
-             id rootVal = g_triggerConfig[@"rootEnabled"];
-             rootEnabled = (rootVal == nil) ? NO : [rootVal boolValue];
-        }
-
-        if (!rootEnabled) {
-            SRLog(@"[RemoteCommand] Root command rejected: disabled in settings");
-            return @"Error: Root Command is disabled in Settings.\n";
-        }
-
         SRLog(@"Executing as root: %@", shellCmd);
 
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{

@@ -7,9 +7,7 @@
 @property (nonatomic, strong) UILabel *versionLabel;
 @property (nonatomic, strong) UILabel *appTitleLabel;
 @property (nonatomic, strong) UISwitch *masterSwitch;
-@property (nonatomic, strong) UISwitch *tcpSwitch;
 @property (nonatomic, strong) UISwitch *nfcSwitch;
-@property (nonatomic, strong) UISwitch *rootSwitch;
 @end
 
 @implementation RCSettingsViewController
@@ -131,7 +129,7 @@
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    if (section == 0) return 4; // Master + TCP + NFC + Root
+    if (section == 0) return 2; // Master + NFC
     return 2; // Export, Import
 }
 
@@ -147,25 +145,11 @@
             cell.accessoryView = _masterSwitch;
             cell.selectionStyle = UITableViewCellSelectionStyleNone;
         } else if (indexPath.row == 1) {
-            cell.textLabel.text = @"TCP Server";
-            _tcpSwitch = [[UISwitch alloc] init];
-            _tcpSwitch.on = [RCConfigManager sharedManager].tcpEnabled;
-            [_tcpSwitch addTarget:self action:@selector(tcpToggleChanged:) forControlEvents:UIControlEventValueChanged];
-            cell.accessoryView = _tcpSwitch;
-            cell.selectionStyle = UITableViewCellSelectionStyleNone;
-        } else if (indexPath.row == 2) {
             cell.textLabel.text = @"NFC Scanning";
             _nfcSwitch = [[UISwitch alloc] init];
             _nfcSwitch.on = [RCConfigManager sharedManager].nfcEnabled;
             [_nfcSwitch addTarget:self action:@selector(nfcToggleChanged:) forControlEvents:UIControlEventValueChanged];
             cell.accessoryView = _nfcSwitch;
-            cell.selectionStyle = UITableViewCellSelectionStyleNone;
-        } else if (indexPath.row == 3) {
-            cell.textLabel.text = @"Root Command";
-            self.rootSwitch = [[UISwitch alloc] init];
-            self.rootSwitch.on = [RCConfigManager sharedManager].rootEnabled;
-            [self.rootSwitch addTarget:self action:@selector(rootToggleChanged:) forControlEvents:UIControlEventValueChanged];
-            cell.accessoryView = self.rootSwitch;
             cell.selectionStyle = UITableViewCellSelectionStyleNone;
         }
     } else {
@@ -201,16 +185,8 @@
 
 #pragma mark - Actions
 
-- (void)rootToggleChanged:(UISwitch *)sender {
-    [RCConfigManager sharedManager].rootEnabled = sender.on;
-}
-
 - (void)masterToggleChanged:(UISwitch *)sender {
     [RCConfigManager sharedManager].masterEnabled = sender.on;
-}
-
-- (void)tcpToggleChanged:(UISwitch *)sender {
-    [RCConfigManager sharedManager].tcpEnabled = sender.on;
 }
 
 - (void)nfcToggleChanged:(UISwitch *)sender {
@@ -319,7 +295,6 @@
     
     if (success) {
         _masterSwitch.on = [RCConfigManager sharedManager].masterEnabled;
-        _tcpSwitch.on = [RCConfigManager sharedManager].tcpEnabled;
         _nfcSwitch.on = [RCConfigManager sharedManager].nfcEnabled;
         [self.tableView reloadData];
         

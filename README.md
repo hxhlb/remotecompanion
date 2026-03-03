@@ -4,7 +4,7 @@ RemoteCompanion provides fast, scriptable system control for modern rootless jai
 
 > [!IMPORTANT]
 > **What's New in v2.2**
-> - **Run as Root**: Full support for system-level actions via a native root toggle in the editor and CLI flags (`rc -r`).
+> - **Run as Root**: Full support for system-level actions via a native root toggle in the editor and CLI flags (`rc -r`). Enabled by default.
 > - **Lua Dynamic Bridge**: Lua scripts now support `dlopen` and `objc_call`.
 > - **New System Utilities**: Native support for `ldrestart`, `userspace-reboot`, and `uicache`, built directly into the core and available as preset UI actions.
 > - **Trigger Favorites**: Mark any trigger as a favorite for instant access at the top of the picker for instant access to edit or long-press to run.
@@ -292,15 +292,7 @@ data:
 
 RemoteCompanion implements several measures to ensure your device remains secure:
 
-### Security
-RemoteCompanion has moved from a public TCP listener to a **UNIX Domain Socket** (`/var/mobile/Documents/rc.sock`).
-
-- **No Open Ports**: The tweak no longer listens on any network ports.
-- **Encrypted by Default**: Remote access is strictly handled via **SSH**, meaning every command is encrypted and authenticated.
 - **Local Access**: Local apps and the `rc` CLI on the device communicate directly with the socket file, ensuring zero network exposure.
-
-### Root Access Control
-The "Root Command" feature must be explicitly enabled in the app settings.
 
 ## Troubleshooting
 
