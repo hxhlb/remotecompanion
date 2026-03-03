@@ -51,7 +51,7 @@
     
     // Categories and actions
     // Each action: @{ @"name": display name, @"command": rc command }
-    _sectionTitles = @[@"Media", @"Device Controls", @"Connectivity", @"System", @"Audio"];
+    _sectionTitles = @[@"Media", @"Device Controls", @"Connectivity", @"System", @"Audio", @"Scripting & Logic"];
     
     _sections = @[
         // Media
@@ -116,17 +116,20 @@
 
             @{ @"name": @"Low Power Mode On", @"command": @"low power on", @"icon": @"battery.25" },
             @{ @"name": @"Low Power Mode Off", @"command": @"low power off", @"icon": @"battery.100" },
-            @{ @"name": @"Low Power Mode Toggle", @"command": @"low power toggle", @"icon": @"battery.25" },
-            @{ @"name": @"Custom Lua Script", @"command": @"__LUA_SCRIPT__", @"icon": @"scroll.fill" },
-            @{ @"name": @"If Condition...", @"command": @"__IF_CONDITION__", @"icon": @"arrow.triangle.branch" },
-            @{ @"name": @"Delay", @"command": @"__DELAY__", @"icon": @"timer" },
-            @{ @"name": @"Terminal Command", @"command": @"__CUSTOM__", @"icon": @"terminal.fill" }
+            @{ @"name": @"Low Power Mode Toggle", @"command": @"low power toggle", @"icon": @"battery.25" }
         ],
         // Audio (ANC)
         @[
             @{ @"name": @"ANC On", @"command": @"anc on", @"icon": @"ear.badge.checkmark" },
             @{ @"name": @"ANC Off", @"command": @"anc off", @"icon": @"ear" },
             @{ @"name": @"Transparency Mode", @"command": @"anc transparency", @"icon": @"waveform.circle.fill" }
+        ],
+        // Scripting & Logic
+        @[
+            @{ @"name": @"Custom Lua Script", @"command": @"__LUA_SCRIPT__", @"icon": @"scroll.fill" },
+            @{ @"name": @"If Condition...", @"command": @"__IF_CONDITION__", @"icon": @"arrow.triangle.branch" },
+            @{ @"name": @"Delay", @"command": @"__DELAY__", @"icon": @"timer" },
+            @{ @"name": @"Terminal Command", @"command": @"__CUSTOM__", @"icon": @"terminal.fill" }
         ]
     ];
     

@@ -4,9 +4,8 @@ RemoteCompanion provides fast, scriptable system control for modern rootless jai
 
 > [!IMPORTANT]
 > **What's New in v2.3**
-> - **Settings Simplification**: Removed redundant "TCP Server" and "Root Command" switches. These features are now enabled by default for a smoother out-of-the-box experience.
-> - **App Blacklist System**: Added a new blacklist system to exclude specific apps (e.g., banking apps) from hardware triggers and gestures. Managed via `rc blacklist` CLI commands.
 > - **Conditional Actions ("If" Blocks)**: Introduced a powerful new "If" action type. Create smart sequences that only fire if certain conditions are met (e.g., "If Orientation is Landscape", "If Device is Locked").
+> - **App Blacklist System**: Added a new blacklist system to exclude specific apps (e.g., banking apps) from hardware triggers and gestures. Managed via `rc blacklist` CLI commands.
 > - **Orientation Detection**: Added a new `rc orientation` status query and integrated it into the conditional actions system. This allows for landscape/portrait-aware action sequences.
 
 <p align="center">
