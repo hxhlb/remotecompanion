@@ -7,7 +7,7 @@ RemoteCompanion provides fast, scriptable system control for modern rootless jai
 > - **Conditional Actions ("If" Blocks)**: Introduced a powerful new "If" action type. Create smart sequences that only fire if certain conditions are met. Nested actions now move together perfectly when reordering.
 > - **NFC, WiFi & Bluetooth Triggers**: Bind actions to physical NFC tags, specific WiFi network connections, or Bluetooth device states.
 > - **App Blacklist System**: Managed via CLI, this system prevents triggers from firing while specific apps (like banking or camera apps) are in the foreground.
-> - **Additional Features**: Added native **Control Center** action and a new **Orientation Status** query (Portrait/Landscape) designed for use from CLI or with the new conditional action.
+> - **Additional Features**: Added native **Unlock Device** and **Control Center** actions, plus a new **Orientation Status** query (Portrait/Landscape) designed for use from CLI or with the new conditional action.
 
 
 <p align="center">

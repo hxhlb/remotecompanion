@@ -16,7 +16,7 @@ All notable changes to this project will be documented in this file.
   - **NFC Tag**: Scan a physical NFC tag and bind actions to its unique UID.
   - **WiFi Network**: Fire actions when connecting to or disconnecting from a specific SSID.
   - **Bluetooth Device**: Fire actions when a specific Bluetooth device connects or disconnects.
-- **Additional Features**: Added native **Control Center** action and a new **Orientation Status** query (Portrait/Landscape) designed for use from CLI or with the new conditional action.
+- **Additional Features**: Added native **Unlock Device** and **Control Center** actions, plus a new **Orientation Status** query (Portrait/Landscape) designed for use from CLI or with the new conditional action.
 - **Dynamic Trigger Interface**: The triggers list now automatically hides categories like "NFC Tags" or "WiFi Network" if they contain no configured triggers, keeping your overview focused.
 - **UI "Tweaker" System**: Added a centralized design engine to live-preview color adjustments. Refined the app to use a sleek monochrome aesthetic with high-saturation gold accents (RGB 242, 195, 80) for favorite triggers.
 
