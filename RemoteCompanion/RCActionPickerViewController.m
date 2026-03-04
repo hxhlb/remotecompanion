@@ -1,5 +1,7 @@
 #import "RCActionPickerViewController.h"
 #import "RCServerClient.h"
+#import "RCConfigManager.h"
+#import "RCUITweaker.h"
 
 @interface RCActionPickerViewController () <UISearchResultsUpdating>
 @property (nonatomic, strong) NSArray<NSString *> *sectionTitles;
@@ -15,6 +17,10 @@
     return self;
 }
 
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -26,7 +32,6 @@
     self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeAlways;
     
     self.title = @"Select Action";
-    self.view.backgroundColor = [UIColor systemBackgroundColor];
     
     // Reduce gap above first section (below search bar)
     self.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, CGFLOAT_MIN)];
@@ -39,6 +44,12 @@
         initWithBarButtonSystemItem:UIBarButtonSystemItemCancel
         target:self
         action:@selector(cancel)];
+    
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc]
+        initWithImage:[UIImage systemImageNamed:@"slider.horizontal.3"]
+        style:UIBarButtonItemStylePlain
+        target:self
+        action:@selector(openUITweaker)];
     
     // Setup Search
     self.searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
@@ -135,10 +146,35 @@
     
     [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"ActionCell"];
     self.tableView.rowHeight = 60; // Increased touch target
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleTweaksChanged:)
+                                                 name:@"RCConfigTweaksChangedNotification"
+                                               object:nil];
+    [self applyTweaks];
 }
 
 - (void)cancel {
     [self dismissViewControllerAnimated:YES completion:nil];
+}
+
+- (void)openUITweaker {
+    [RCUITweaker show];
+}
+
+- (void)handleTweaksChanged:(NSNotification *)note {
+    [self applyTweaks];
+}
+
+- (void)applyTweaks {
+    RCConfigManager *cm = [RCConfigManager sharedManager];
+    CGFloat mainBG = [cm tweakValueForKey:@"mainBackground" defaultVal:0.0];
+    UIColor *pickerBG = [cm tweakColorForKey:@"actionPickerBackground" defaultVal:mainBG];
+    self.view.backgroundColor = pickerBG;
+    self.tableView.backgroundColor = pickerBG;
+    self.navigationController.navigationBar.backgroundColor = [cm tweakColorForKey:@"navBar" defaultVal:0.05];
+    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.2];
+    [self.tableView reloadData];
 }
 
 #pragma mark - Table View Data Source
@@ -180,6 +216,7 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"ActionCell" forIndexPath:indexPath];
+    RCConfigManager *cm = [RCConfigManager sharedManager];
     
     NSDictionary *action;
     if (self.searchController.isActive && self.searchController.searchBar.text.length > 0) {
@@ -189,6 +226,19 @@
     }
     cell.textLabel.text = action[@"name"];
     cell.textLabel.font = [UIFont systemFontOfSize:17];
+    
+    cell.backgroundColor = [cm tweakColorForKey:@"blockBackground" defaultVal:0.1];
+    UIView *selBg = [[UIView alloc] init];
+    selBg.backgroundColor = [cm tweakColorForKey:@"selectionHighlight" defaultVal:0.2];
+    cell.selectedBackgroundView = selBg;
+    cell.layer.borderColor = [cm tweakColorForKey:@"borders" defaultVal:0.3].CGColor;
+    cell.layer.borderWidth = 1.0;
+    cell.contentView.backgroundColor = [UIColor clearColor];
+    cell.layer.shadowColor = [cm tweakColorForKey:@"shadowBrightness" defaultVal:0.0].CGColor;
+    cell.layer.shadowOpacity = [cm tweakValueForKey:@"shadowOpacity" defaultVal:0.5];
+    cell.layer.shadowOffset = CGSizeMake(0, 2);
+    cell.layer.shadowRadius = 4.0;
+    cell.layer.masksToBounds = NO;
     
     if (action[@"icon"]) {
         NSString *iconName = action[@"icon"];

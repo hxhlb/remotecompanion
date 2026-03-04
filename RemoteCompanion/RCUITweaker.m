@@ -177,6 +177,8 @@ static CGFloat const RCPanelInset = 12.0f;
 - (NSArray<NSDictionary *> *)tweakDefinitions {
     return @[
         @{@"key": @"mainBackground", @"name": @"Main BG", @"default": @(0.0)},
+        @{@"key": @"settingsBackground", @"name": @"Settings BG", @"default": @(0.0)},
+        @{@"key": @"actionPickerBackground", @"name": @"Select Actions BG", @"default": @(0.0)},
         @{@"key": @"blockBackground", @"name": @"Block BG", @"default": @(0.1)},
         @{@"key": @"separators", @"name": @"Separators", @"default": @(0.2)},
         @{@"key": @"borders", @"name": @"Borders", @"default": @(0.3)},

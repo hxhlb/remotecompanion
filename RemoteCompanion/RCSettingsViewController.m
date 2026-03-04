@@ -105,7 +105,10 @@
 
 - (void)applyTweaks {
     RCConfigManager *cm = [RCConfigManager sharedManager];
-    self.view.backgroundColor = [cm tweakColorForKey:@"mainBackground" defaultVal:0.0];
+    CGFloat mainBG = [cm tweakValueForKey:@"mainBackground" defaultVal:0.0];
+    UIColor *settingsBG = [cm tweakColorForKey:@"settingsBackground" defaultVal:mainBG];
+    self.view.backgroundColor = settingsBG;
+    self.tableView.backgroundColor = settingsBG;
     self.navigationController.navigationBar.backgroundColor = [cm tweakColorForKey:@"navBar" defaultVal:0.05];
     self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.2];
     [self.tableView reloadData];
@@ -216,7 +219,6 @@
 
     if (indexPath.section == 0 && indexPath.row == 2) {
         [RCUITweaker show];
-        [self dismissSettings];
     } else if (indexPath.section == 1) {
         if (indexPath.row == 0) {
             [self exportConfig];
