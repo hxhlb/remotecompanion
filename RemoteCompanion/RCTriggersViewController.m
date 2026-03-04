@@ -106,9 +106,9 @@
 
 - (void)applyTweaks {
     RCConfigManager *cm = [RCConfigManager sharedManager];
-    self.view.backgroundColor = [cm tweakColorForKey:@"mainBackground" defaultVal:0.0];
-    self.navigationController.navigationBar.backgroundColor = [cm tweakColorForKey:@"navBar" defaultVal:0.05];
-    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.2];
+    self.view.backgroundColor = [cm tweakColorForKey:@"mainBackground" defaultVal:0.09];
+    self.navigationController.navigationBar.backgroundColor = [cm tweakColorForKey:@"navBar" defaultVal:0.09];
+    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.35];
     [self.tableView reloadData];
 }
 
@@ -332,9 +332,9 @@
 
 - (void)applySectionCardStyleToCell:(UITableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath {
     RCConfigManager *config = [RCConfigManager sharedManager];
-    UIColor *fillColor = [config tweakColorForKey:@"blockBackground" defaultVal:0.1];
-    UIColor *selectedFillColor = [config tweakColorForKey:@"selectionHighlight" defaultVal:0.2];
-    UIColor *borderColor = [config tweakColorForKey:@"borders" defaultVal:0.3];
+    UIColor *fillColor = [config tweakColorForKey:@"blockBackground" defaultVal:0.12];
+    UIColor *selectedFillColor = [config tweakColorForKey:@"selectionHighlight" defaultVal:0.14];
+    UIColor *borderColor = [config tweakColorForKey:@"borders" defaultVal:0.15];
     
     NSInteger rowCount = [self.tableView numberOfRowsInSection:indexPath.section];
     if (rowCount < 1) {
@@ -348,13 +348,22 @@
     CGFloat lineWidth = 1.0;
     CGFloat cornerRadius = 12.0;
     CGFloat horizontalInset = 0.0;
-    CGRect cardRect = CGRectInset(cell.bounds, horizontalInset, 0.0);
-    cardRect = CGRectInset(cardRect, lineWidth * 0.5, lineWidth * 0.5);
-    if (CGRectGetWidth(cardRect) <= 0 || CGRectGetHeight(cardRect) <= 0) {
+    CGRect fillRect = CGRectInset(cell.bounds, horizontalInset, 0.0);
+    CGRect borderRect = CGRectInset(fillRect, lineWidth * 0.5, lineWidth * 0.5);
+    if (CGRectGetWidth(fillRect) <= 0 || CGRectGetHeight(fillRect) <= 0) {
+        return;
+    }
+    if (CGRectGetWidth(borderRect) <= 0 || CGRectGetHeight(borderRect) <= 0) {
         return;
     }
     
-    UIBezierPath *fillPath = [self fillPathForRect:cardRect
+    UIBezierPath *fillPath = [self fillPathForRect:fillRect
+                                             first:isFirst
+                                              last:isLast
+                                            single:isSingle
+                                      cornerRadius:cornerRadius];
+    
+    UIBezierPath *borderPath = [self fillPathForRect:borderRect
                                              first:isFirst
                                               last:isLast
                                             single:isSingle
@@ -371,7 +380,7 @@
     
     CAShapeLayer *normalBorderLayer = [CAShapeLayer layer];
     normalBorderLayer.frame = normalBackgroundView.bounds;
-    normalBorderLayer.path = fillPath.CGPath;
+    normalBorderLayer.path = borderPath.CGPath;
     normalBorderLayer.fillColor = [UIColor clearColor].CGColor;
     normalBorderLayer.strokeColor = borderColor.CGColor;
     normalBorderLayer.lineWidth = lineWidth;
@@ -404,7 +413,7 @@
     
     CAShapeLayer *selectedBorderLayer = [CAShapeLayer layer];
     selectedBorderLayer.frame = selectedBackgroundView.bounds;
-    selectedBorderLayer.path = fillPath.CGPath;
+    selectedBorderLayer.path = borderPath.CGPath;
     selectedBorderLayer.fillColor = [UIColor clearColor].CGColor;
     selectedBorderLayer.strokeColor = borderColor.CGColor;
     selectedBorderLayer.lineWidth = lineWidth;
@@ -481,7 +490,7 @@
 
     // Yellow text for Favorites section
     if ([_sectionTitles[section] isEqualToString:@"Favorites"]) {
-        label.textColor = [UIColor systemYellowColor];
+        label.textColor = [UIColor colorWithRed:227/255.0 green:190/255.0 blue:104/255.0 alpha:1.0];
     } else {
         label.textColor = [UIColor secondaryLabelColor];
     }
@@ -597,7 +606,7 @@
             completionHandler(YES);
         }];
 
-    favoriteAction.backgroundColor = isFavorite ? [UIColor systemGrayColor] : [UIColor systemYellowColor];
+    favoriteAction.backgroundColor = isFavorite ? [UIColor systemGrayColor] : [UIColor colorWithRed:227/255.0 green:190/255.0 blue:104/255.0 alpha:1.0];
     favoriteAction.image = [UIImage systemImageNamed:isFavorite ? @"star.slash.fill" : @"star.fill"];
 
     return [UISwipeActionsConfiguration configurationWithActions:@[favoriteAction]];

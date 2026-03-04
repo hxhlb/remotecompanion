@@ -105,12 +105,12 @@
 
 - (void)applyTweaks {
     RCConfigManager *cm = [RCConfigManager sharedManager];
-    CGFloat mainBG = [cm tweakValueForKey:@"mainBackground" defaultVal:0.0];
+    CGFloat mainBG = [cm tweakValueForKey:@"mainBackground" defaultVal:0.09];
     UIColor *settingsBG = [cm tweakColorForKey:@"settingsBackground" defaultVal:mainBG];
     self.view.backgroundColor = settingsBG;
     self.tableView.backgroundColor = settingsBG;
-    self.navigationController.navigationBar.backgroundColor = [cm tweakColorForKey:@"navBar" defaultVal:0.05];
-    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.2];
+    self.navigationController.navigationBar.backgroundColor = [cm tweakColorForKey:@"navBar" defaultVal:0.09];
+    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.35];
     [self.tableView reloadData];
 }
 
@@ -160,21 +160,17 @@
     UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
     
     RCConfigManager *cm = [RCConfigManager sharedManager];
-    cell.backgroundColor = [cm tweakColorForKey:@"blockBackground" defaultVal:0.1];
+    cell.backgroundColor = [cm tweakColorForKey:@"blockBackground" defaultVal:0.12];
     
     UIView *selBg = [[UIView alloc] init];
-    selBg.backgroundColor = [cm tweakColorForKey:@"selectionHighlight" defaultVal:0.2];
+    selBg.backgroundColor = [cm tweakColorForKey:@"selectionHighlight" defaultVal:0.14];
     cell.selectedBackgroundView = selBg;
 
-    cell.layer.borderColor = [cm tweakColorForKey:@"borders" defaultVal:0.3].CGColor;
+    cell.layer.borderColor = [cm tweakColorForKey:@"borders" defaultVal:0.15].CGColor;
     cell.layer.borderWidth = 1.0;
     cell.contentView.backgroundColor = [UIColor clearColor];
     
-    cell.layer.shadowColor = [cm tweakColorForKey:@"shadowBrightness" defaultVal:0.0].CGColor;
-    cell.layer.shadowOpacity = [cm tweakValueForKey:@"shadowOpacity" defaultVal:0.5];
-    cell.layer.shadowOffset = CGSizeMake(0, 2);
-    cell.layer.shadowRadius = 4.0;
-    cell.layer.masksToBounds = NO;
+    cell.layer.masksToBounds = YES;
     
     if (indexPath.section == 0) {
         if (indexPath.row == 0) {

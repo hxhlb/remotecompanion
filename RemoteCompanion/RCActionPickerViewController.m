@@ -168,12 +168,12 @@
 
 - (void)applyTweaks {
     RCConfigManager *cm = [RCConfigManager sharedManager];
-    CGFloat mainBG = [cm tweakValueForKey:@"mainBackground" defaultVal:0.0];
+    CGFloat mainBG = [cm tweakValueForKey:@"mainBackground" defaultVal:0.09];
     UIColor *pickerBG = [cm tweakColorForKey:@"actionPickerBackground" defaultVal:mainBG];
     self.view.backgroundColor = pickerBG;
     self.tableView.backgroundColor = pickerBG;
-    self.navigationController.navigationBar.backgroundColor = [cm tweakColorForKey:@"navBar" defaultVal:0.05];
-    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.2];
+    self.navigationController.navigationBar.backgroundColor = [cm tweakColorForKey:@"navBar" defaultVal:0.09];
+    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.35];
     [self.tableView reloadData];
 }
 
@@ -227,18 +227,14 @@
     cell.textLabel.text = action[@"name"];
     cell.textLabel.font = [UIFont systemFontOfSize:17];
     
-    cell.backgroundColor = [cm tweakColorForKey:@"blockBackground" defaultVal:0.1];
+    cell.backgroundColor = [cm tweakColorForKey:@"blockBackground" defaultVal:0.12];
     UIView *selBg = [[UIView alloc] init];
-    selBg.backgroundColor = [cm tweakColorForKey:@"selectionHighlight" defaultVal:0.2];
+    selBg.backgroundColor = [cm tweakColorForKey:@"selectionHighlight" defaultVal:0.14];
     cell.selectedBackgroundView = selBg;
-    cell.layer.borderColor = [cm tweakColorForKey:@"borders" defaultVal:0.3].CGColor;
+    cell.layer.borderColor = [cm tweakColorForKey:@"borders" defaultVal:0.15].CGColor;
     cell.layer.borderWidth = 1.0;
     cell.contentView.backgroundColor = [UIColor clearColor];
-    cell.layer.shadowColor = [cm tweakColorForKey:@"shadowBrightness" defaultVal:0.0].CGColor;
-    cell.layer.shadowOpacity = [cm tweakValueForKey:@"shadowOpacity" defaultVal:0.5];
-    cell.layer.shadowOffset = CGSizeMake(0, 2);
-    cell.layer.shadowRadius = 4.0;
-    cell.layer.masksToBounds = NO;
+    cell.layer.masksToBounds = YES; // Ensure content doesn't overflow rounded corners if any
     
     if (action[@"icon"]) {
         NSString *iconName = action[@"icon"];

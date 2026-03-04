@@ -176,16 +176,14 @@ static CGFloat const RCPanelInset = 12.0f;
 
 - (NSArray<NSDictionary *> *)tweakDefinitions {
     return @[
-        @{@"key": @"mainBackground", @"name": @"Main BG", @"default": @(0.0)},
-        @{@"key": @"settingsBackground", @"name": @"Settings BG", @"default": @(0.0)},
-        @{@"key": @"actionPickerBackground", @"name": @"Select Actions BG", @"default": @(0.0)},
-        @{@"key": @"blockBackground", @"name": @"Block BG", @"default": @(0.1)},
-        @{@"key": @"separators", @"name": @"Separators", @"default": @(0.2)},
-        @{@"key": @"borders", @"name": @"Borders", @"default": @(0.3)},
-        @{@"key": @"navBar", @"name": @"Nav Bar BG", @"default": @(0.05)},
-        @{@"key": @"selectionHighlight", @"name": @"Selection Highlight", @"default": @(0.2)},
-        @{@"key": @"shadowBrightness", @"name": @"Shadow Brightness", @"default": @(0.0)},
-        @{@"key": @"shadowOpacity", @"name": @"Shadow Opacity", @"default": @(0.5)}
+        @{@"key": @"mainBackground", @"name": @"Main BG", @"default": @(0.09)},
+        @{@"key": @"settingsBackground", @"name": @"Settings BG", @"default": @(0.09)},
+        @{@"key": @"actionPickerBackground", @"name": @"Select Actions BG", @"default": @(0.09)},
+        @{@"key": @"blockBackground", @"name": @"Block BG", @"default": @(0.12)},
+        @{@"key": @"separators", @"name": @"Separators", @"default": @(0.35)},
+        @{@"key": @"borders", @"name": @"Borders", @"default": @(0.15)},
+        @{@"key": @"navBar", @"name": @"Nav Bar BG", @"default": @(0.09)},
+        @{@"key": @"selectionHighlight", @"name": @"Selection Highlight", @"default": @(0.14)}
     ];
 }
 
