@@ -13,3 +13,5 @@ TODO.md
 *.log
 Shortcuts.sqlite*
 .git-backup-*/
+deploy_log.txt
+deploy_output.log
