@@ -347,7 +347,7 @@
     
     CGFloat lineWidth = 1.0 / UIScreen.mainScreen.scale;
     CGFloat cornerRadius = 12.0;
-    CGFloat horizontalInset = 16.0;
+    CGFloat horizontalInset = 0.0;
     CGRect cardRect = CGRectInset(cell.bounds, horizontalInset, 0.0);
     cardRect = CGRectInset(cardRect, lineWidth * 0.5, lineWidth * 0.5);
     if (CGRectGetWidth(cardRect) <= 0 || CGRectGetHeight(cardRect) <= 0) {
