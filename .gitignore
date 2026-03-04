@@ -11,3 +11,5 @@ debian-binary
 deploy.sh
 TODO.md
 *.log
+Shortcuts.sqlite*
+.git-backup-*/
