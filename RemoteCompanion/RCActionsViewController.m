@@ -101,7 +101,7 @@
     RCConfigManager *cm = [RCConfigManager sharedManager];
     self.view.backgroundColor = [cm tweakColorForKey:@"mainBackground" defaultVal:0.09];
     self.navigationController.navigationBar.backgroundColor = [cm tweakColorForKey:@"navBar" defaultVal:0.09];
-    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.35];
+    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.30];
     [self.tableView reloadData];
 }
 
@@ -557,38 +557,78 @@
     [self presentViewController:picker animated:YES completion:nil];
 }
 
-- (void)moveActionFromIndex:(NSInteger)sourceIndex toIndex:(NSInteger)destinationIndex {
+- (NSInteger)moveActionFromIndex:(NSInteger)sourceIndex toFinalIndex:(NSInteger)finalIndex {
     if (sourceIndex < 0 || sourceIndex >= (NSInteger)self.actions.count) {
-        return;
+        return NSNotFound;
     }
     
     NSRange rangeToMove = [self ifBlockRangeForIndex:sourceIndex];
     if (rangeToMove.location == NSNotFound || rangeToMove.length == 0) {
-        return;
+        return NSNotFound;
     }
     
-    if (destinationIndex > (NSInteger)self.actions.count) {
-        destinationIndex = self.actions.count;
-    }
-    
-    if (destinationIndex >= (NSInteger)rangeToMove.location &&
-        destinationIndex <= (NSInteger)(rangeToMove.location + rangeToMove.length)) {
-        return;
+    NSInteger maxFinalIndex = (NSInteger)self.actions.count - (NSInteger)rangeToMove.length;
+    finalIndex = MAX(0, MIN(finalIndex, maxFinalIndex));
+    if (finalIndex == (NSInteger)rangeToMove.location) {
+        return rangeToMove.location;
     }
     
     NSArray *itemsToMove = [self.actions subarrayWithRange:rangeToMove];
     [self.actions removeObjectsInRange:rangeToMove];
-    
-    if (destinationIndex > (NSInteger)rangeToMove.location) {
-        destinationIndex -= rangeToMove.length;
-    }
-    
-    destinationIndex = MAX(0, MIN(destinationIndex, (NSInteger)self.actions.count));
-    NSIndexSet *indexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(destinationIndex, itemsToMove.count)];
+
+    finalIndex = MAX(0, MIN(finalIndex, (NSInteger)self.actions.count));
+    NSIndexSet *indexes = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(finalIndex, itemsToMove.count)];
     [self.actions insertObjects:itemsToMove atIndexes:indexes];
     
     [self saveActions];
     [self.tableView reloadData];
+    return finalIndex;
+}
+
+- (NSInteger)finalIndexFromDropDestinationIndex:(NSInteger)destinationIndex sourceIndex:(NSInteger)sourceIndex {
+    NSRange sourceRange = [self ifBlockRangeForIndex:sourceIndex];
+    if (sourceRange.location == NSNotFound || sourceRange.length == 0) {
+        return destinationIndex;
+    }
+    if (destinationIndex > (NSInteger)sourceRange.location) {
+        destinationIndex -= sourceRange.length;
+    }
+    return destinationIndex;
+}
+
+- (NSInteger)adjustedDestinationIndexForDropCoordinator:(id<UITableViewDropCoordinator>)coordinator
+                                   destinationIndexPath:(NSIndexPath *)destinationIndexPath
+                                             sourceItem:(id)sourceItem {
+    NSInteger destinationIndex = destinationIndexPath ? destinationIndexPath.row : self.actions.count;
+    if (!destinationIndexPath ||
+        destinationIndex < 0 ||
+        destinationIndex >= (NSInteger)self.actions.count) {
+        return destinationIndex;
+    }
+    
+    BOOL sourceIsControlRow = [self isIfActionItem:sourceItem] || [self isEndIfActionItem:sourceItem];
+    if (sourceIsControlRow) {
+        return destinationIndex;
+    }
+    
+    id destinationItem = self.actions[destinationIndex];
+    BOOL destinationIsIf = [self isIfActionItem:destinationItem];
+    BOOL destinationIsEndIf = [self isEndIfActionItem:destinationItem];
+    if (!destinationIsIf && !destinationIsEndIf) {
+        return destinationIndex;
+    }
+    
+    CGPoint dropPoint = [coordinator.session locationInView:self.tableView];
+    CGRect destinationRect = [self.tableView rectForRowAtIndexPath:destinationIndexPath];
+    BOOL lowerHalfDrop = dropPoint.y >= CGRectGetMidY(destinationRect);
+    
+    if (destinationIsIf) {
+        // Lower-half drop on "If" row means "place inside block", upper-half means before it.
+        return lowerHalfDrop ? destinationIndex + 1 : destinationIndex;
+    }
+    
+    // Lower-half drop on "End If" row means "place outside block", upper-half means inside.
+    return lowerHalfDrop ? destinationIndex + 1 : destinationIndex;
 }
 
 #pragma mark - Table View Data Source
@@ -888,8 +928,8 @@
 - (void)applySectionCardStyleToCell:(UITableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath {
     RCConfigManager *config = [RCConfigManager sharedManager];
     UIColor *fillColor = [config tweakColorForKey:@"blockBackground" defaultVal:0.12];
-    UIColor *selectedFillColor = [config tweakColorForKey:@"selectionHighlight" defaultVal:0.14];
-    UIColor *borderColor = [config tweakColorForKey:@"borders" defaultVal:0.15];
+    UIColor *selectedFillColor = [config tweakColorForKey:@"selectionHighlight" defaultVal:0.15];
+    UIColor *borderColor = [config tweakColorForKey:@"borders" defaultVal:0.14];
     
     NSInteger rowCount = [self.tableView numberOfRowsInSection:indexPath.section];
     if (rowCount < 1) {
@@ -1028,8 +1068,6 @@
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"ActionCell"];
     }
     
-    RCConfigManager *cm = [RCConfigManager sharedManager];
-    
     // Action card styling applied via applySectionCardStyleToCell: below
     id actionItem = _actions[indexPath.row];
     NSString *cleanName = [self displayNameForCommand:actionItem];
@@ -1158,28 +1196,21 @@
 
 - (void)tableView:(UITableView *)tableView performDropWithCoordinator:(id<UITableViewDropCoordinator>)coordinator {
     NSIndexPath *destinationIndexPath = coordinator.destinationIndexPath;
-    NSInteger destinationIndex = destinationIndexPath ? destinationIndexPath.row : self.actions.count;
     
     for (id<UITableViewDropItem> item in coordinator.items) {
         if (!item.sourceIndexPath) continue;
         
         NSInteger sourceIndex = item.sourceIndexPath.row;
         id sourceItem = (sourceIndex >= 0 && sourceIndex < (NSInteger)self.actions.count) ? self.actions[sourceIndex] : nil;
-        
-        if (destinationIndexPath &&
-            destinationIndex >= 0 &&
-            destinationIndex < (NSInteger)self.actions.count &&
-            [self isIfActionItem:self.actions[destinationIndex]] &&
-            ![self isIfActionItem:sourceItem] &&
-            ![self isEndIfActionItem:sourceItem]) {
-            // UX: dropping onto an If header should place a normal action inside that block.
-            destinationIndex += 1;
-        }
-        
-        [self moveActionFromIndex:sourceIndex toIndex:destinationIndex];
+        NSInteger destinationIndex = [self adjustedDestinationIndexForDropCoordinator:coordinator
+                                                                 destinationIndexPath:destinationIndexPath
+                                                                           sourceItem:sourceItem];
+        NSInteger finalIndex = [self finalIndexFromDropDestinationIndex:destinationIndex sourceIndex:sourceIndex];
+        NSInteger insertedIndex = [self moveActionFromIndex:sourceIndex toFinalIndex:finalIndex];
         
         if (self.actions.count > 0) {
-            NSInteger finalRow = MIN(MAX(destinationIndex, 0), (NSInteger)self.actions.count - 1);
+            NSInteger safeInserted = (insertedIndex == NSNotFound) ? sourceIndex : insertedIndex;
+            NSInteger finalRow = MIN(MAX(safeInserted, 0), (NSInteger)self.actions.count - 1);
             [coordinator dropItem:item.dragItem toRowAtIndexPath:[NSIndexPath indexPathForRow:finalRow inSection:0]];
         }
         break;
@@ -1215,7 +1246,7 @@
 }
 
 - (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath *)destinationIndexPath {
-    [self moveActionFromIndex:sourceIndexPath.row toIndex:destinationIndexPath.row];
+    [self moveActionFromIndex:sourceIndexPath.row toFinalIndex:destinationIndexPath.row];
 }
 
 // Deletion (legacy - leading/trailing swipe actions are preferred now)

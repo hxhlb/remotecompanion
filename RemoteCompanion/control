@@ -6,4 +6,5 @@ Description: A modern Activator replacement for rootless jailbreaks. Bind trigge
 Maintainer: Saihgupr
 Author: Saihgupr
 Section: Utilities
+Icon: https://saihgupr.github.io/remotecompanion/CydiaIcon.png
 Depends: firmware (>= 14.0)

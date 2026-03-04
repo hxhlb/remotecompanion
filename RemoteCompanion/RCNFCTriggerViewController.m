@@ -14,7 +14,6 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = @"Scan NFC Tag";
-    self.view.backgroundColor = [UIColor systemBackgroundColor];
     
     self.statusLabel = [[UILabel alloc] initWithFrame:self.view.bounds];
     self.statusLabel.text = @"Ready to Scan";
@@ -25,8 +24,23 @@
     UIBarButtonItem *scanButton = [[UIBarButtonItem alloc] initWithTitle:@"Start Scan" style:UIBarButtonItemStyleDone target:self action:@selector(startScanning)];
     self.navigationItem.rightBarButtonItem = scanButton;
     
+    [[NSNotificationCenter defaultCenter] addObserver:self 
+                                             selector:@selector(applyTweaks) 
+                                                 name:@"RCConfigTweaksChangedNotification" 
+                                               object:nil];
+    
+    [self applyTweaks];
     [self startScanning];
 }
+
+- (void)applyTweaks {
+    RCConfigManager *cm = [RCConfigManager sharedManager];
+    UIColor *bg = [cm tweakColorForKey:@"mainBackground" defaultVal:0.09];
+    self.view.backgroundColor = bg;
+    self.navigationController.navigationBar.backgroundColor = bg;
+    self.statusLabel.textColor = [UIColor labelColor];
+}
+
 
 - (void)startScanning {
     if (self.tagSession) {

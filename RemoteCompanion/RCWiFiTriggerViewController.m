@@ -18,13 +18,30 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = @"WiFi Trigger";
-    self.view.backgroundColor = [UIColor systemBackgroundColor];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self 
+                                             selector:@selector(applyTweaks) 
+                                                 name:@"RCConfigTweaksChangedNotification" 
+                                               object:nil];
+    
+    [self applyTweaks];
     
     self.ssid = [self currentWiFiSSID] ?: @"";
     self.isDisconnectTrigger = NO;
     
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Add" style:UIBarButtonItemStyleDone target:self action:@selector(saveTrigger)];
 }
+
+- (void)applyTweaks {
+    RCConfigManager *cm = [RCConfigManager sharedManager];
+    UIColor *bg = [cm tweakColorForKey:@"mainBackground" defaultVal:0.09];
+    self.view.backgroundColor = bg;
+    self.navigationController.navigationBar.backgroundColor = bg;
+    self.tableView.backgroundColor = bg;
+    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.30];
+    [self.tableView reloadData];
+}
+
 
 - (NSString *)currentWiFiSSID {
     NSArray *ifs = (__bridge_transfer NSArray *)CNCopySupportedInterfaces();

@@ -180,10 +180,11 @@ static CGFloat const RCPanelInset = 12.0f;
         @{@"key": @"settingsBackground", @"name": @"Settings BG", @"default": @(0.09)},
         @{@"key": @"actionPickerBackground", @"name": @"Select Actions BG", @"default": @(0.09)},
         @{@"key": @"blockBackground", @"name": @"Block BG", @"default": @(0.12)},
-        @{@"key": @"separators", @"name": @"Separators", @"default": @(0.35)},
-        @{@"key": @"borders", @"name": @"Borders", @"default": @(0.15)},
+        @{@"key": @"separators", @"name": @"Separators", @"default": @(0.30)},
+        @{@"key": @"borders", @"name": @"Borders", @"default": @(0.14)},
         @{@"key": @"navBar", @"name": @"Nav Bar BG", @"default": @(0.09)},
-        @{@"key": @"selectionHighlight", @"name": @"Selection Highlight", @"default": @(0.14)}
+        @{@"key": @"selectionHighlight", @"name": @"Selection Highlight", @"default": @(0.15)}
+        // Shadow controls are intentionally hidden for now. Keep keys in config/runtime for easy re-enable.
     ];
 }
 

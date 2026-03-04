@@ -114,6 +114,7 @@
             @{ @"name": @"Do Not Disturb Toggle", @"command": @"dnd toggle", @"icon": @"moon.circle.fill" },
             @{ @"name": @"Activate Siri", @"command": @"siri", @"icon": @"mic.circle.fill" },
             @{ @"name": @"Home Button", @"command": @"home", @"icon": @"house.fill" },
+            @{ @"name": @"Open Control Center", @"command": @"open control center", @"icon": @"switch.2" },
             @{ @"name": @"Respring Device", @"command": @"respring", @"icon": @"memories" },
             @{ @"name": @"Soft Reboot (ldrestart)", @"command": @"ldrestart", @"icon": @"arrow.clockwise" },
             @{ @"name": @"Userspace Reboot", @"command": @"userspace-reboot", @"icon": @"arrow.clockwise.circle" },
@@ -173,7 +174,7 @@
     self.view.backgroundColor = pickerBG;
     self.tableView.backgroundColor = pickerBG;
     self.navigationController.navigationBar.backgroundColor = [cm tweakColorForKey:@"navBar" defaultVal:0.09];
-    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.35];
+    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.30];
     [self.tableView reloadData];
 }
 
@@ -229,9 +230,9 @@
     
     cell.backgroundColor = [cm tweakColorForKey:@"blockBackground" defaultVal:0.12];
     UIView *selBg = [[UIView alloc] init];
-    selBg.backgroundColor = [cm tweakColorForKey:@"selectionHighlight" defaultVal:0.14];
+    selBg.backgroundColor = [cm tweakColorForKey:@"selectionHighlight" defaultVal:0.15];
     cell.selectedBackgroundView = selBg;
-    cell.layer.borderColor = [cm tweakColorForKey:@"borders" defaultVal:0.15].CGColor;
+    cell.layer.borderColor = [cm tweakColorForKey:@"borders" defaultVal:0.14].CGColor;
     cell.layer.borderWidth = 1.0;
     cell.contentView.backgroundColor = [UIColor clearColor];
     cell.layer.masksToBounds = YES; // Ensure content doesn't overflow rounded corners if any

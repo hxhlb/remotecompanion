@@ -2,22 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.3.0-beta.1] - 2026-03-03
+## [2.3.0] - 2026-03-04
 
 ### Changed
-- **Settings Simplification**: Removed "TCP Server" and "Root Command" switches from the app settings. These features are now enabled by default to simplify configuration.
-- **Root Access Control**: Removed the requirement to manually enable root commands in settings.
+- **Conditional Actions ("If" Blocks)**: Introduced a powerful new "If" action type. Create smart sequences that only fire if certain conditions are met. Nested actions now move together perfectly when reordering.
+- **NFC, WiFi & Bluetooth Triggers**: Bind actions to physical NFC tags, specific WiFi network connections, or Bluetooth device states.
+- **App Blacklist System**: Managed via CLI, this system prevents triggers from firing while specific apps (like banking or camera apps) are in the foreground.
+- **Refined Design**: A polished monochromatic UI with custom-tuned separators and borders.
+- **Improved Action Sequences**: Redesigned the drag-and-drop logic for action chains, ensuring that "If" blocks and their nested children move together seamlessly as a single unit during reordering.
 
 ### Added
-- **UNIX Domain Socket IPC**: Migrated the internal server from TCP to a secure UNIX domain socket (`/var/mobile/Documents/rc.sock`). This eliminates port conflicts and prevents external network exposure.
-- **SSH-Tunneled CLI**: The `rc` script now automatically tunnels commands over SSH to the local socket on the device.
-- **Improved Command Acknowledgments**: Added explicit response strings to media, flashlight, and haptic commands to ensure the CLI receives proper feedback.
-- **New Ping Command**: A dedicated `rc ping` command that plays an alert sound on the device and returns a confirmation string.
-- **App Blacklist System**: Added a new blacklist system to exclude specific apps (e.g., banking apps) from hardware triggers and gestures. Managed via `rc blacklist` CLI commands.
-- **Conditional Actions ("If" Blocks)**: Introduced a powerful new "If" action type. Create smart sequences that only fire if certain conditions are met (e.g., "If Orientation is Landscape", "If Device is Locked").
-- **Orientation Detection**: Added a new `rc orientation` status query and integrated it into the conditional actions system. This allows for landscape/portrait-aware action sequences.
+- **Network & Hardware Triggers**: Tap the "+" button to add new event-based triggers:
+  - **NFC Tag**: Scan a physical NFC tag and bind actions to its unique UID.
+  - **WiFi Network**: Fire actions when connecting to or disconnecting from a specific SSID.
+  - **Bluetooth Device**: Fire actions when a specific Bluetooth device connects or disconnects.
+- **Additional Features**: Added native **Control Center** action and a new **Orientation Status** query (Portrait/Landscape) designed for use from CLI or with the new conditional action.
+- **Dynamic Trigger Interface**: The triggers list now automatically hides categories like "NFC Tags" or "WiFi Network" if they contain no configured triggers, keeping your overview focused.
+- **UI "Tweaker" System**: Added a centralized design engine to live-preview color adjustments. Refined the app to use a sleek monochrome aesthetic with high-saturation gold accents (RGB 242, 195, 80) for favorite triggers.
 
 ### Fixed
+- **UI Consistency**: Standardized background and separator colors across all trigger creation and picker views.
+- **Shadow Clean-up**: Removed obsolete shadow logic and UI controls to prioritize a clean, flat design.
 - **CLI Robustness**: Refined the `rc` script to handle rootless and rootful paths more reliably, and optimized command delivery across all jailbreak environments.
 - **Networking Stability**: Fixed intermittent connection failures caused by "TCP Server" port exhaustion or conflicts.
 

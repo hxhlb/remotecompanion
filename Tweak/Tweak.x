@@ -84,6 +84,14 @@ static NSHashTable *siriInteractions = nil;
 - (BOOL)openApplicationWithBundleID:(id)arg1;
 @end
 
+@interface SBControlCenterController : NSObject
++ (id)sharedInstanceIfExists;
++ (id)sharedInstance;
+- (BOOL)isVisible;
+- (void)presentAnimated:(BOOL)animated;
+- (void)presentAnimated:(BOOL)animated completion:(id)completion;
+@end
+
 %hook SBVoiceControlController
 - (id)init {
     id r = %orig;
@@ -2111,6 +2119,56 @@ static NSString *handle_command(NSString *cmd) {
         }
     } else if ([cleanCmd isEqualToString:@"siri"]) {
         return handle_command(@"button siri");
+    } else if ([cleanCmd isEqualToString:@"open control center"] ||
+               [cleanCmd isEqualToString:@"control center"] ||
+               [cleanCmd isEqualToString:@"open-control-center"] ||
+               [cleanCmd isEqualToString:@"control-center"]) {
+        __block BOOL opened = NO;
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            Class ccClass = objc_getClass("SBControlCenterController");
+            if (!ccClass) {
+                SRLog(@"Control Center class unavailable");
+                return;
+            }
+
+            id controller = nil;
+            if ([ccClass respondsToSelector:@selector(sharedInstanceIfExists)]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+                controller = [ccClass performSelector:@selector(sharedInstanceIfExists)];
+#pragma clang diagnostic pop
+            }
+            if (!controller && [ccClass respondsToSelector:@selector(sharedInstance)]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+                controller = [ccClass performSelector:@selector(sharedInstance)];
+#pragma clang diagnostic pop
+            }
+            if (!controller) {
+                SRLog(@"Control Center controller unavailable");
+                return;
+            }
+
+            BOOL isVisible = NO;
+            if ([controller respondsToSelector:@selector(isVisible)]) {
+                isVisible = [controller isVisible];
+            }
+            if (isVisible) {
+                opened = YES;
+                return;
+            }
+
+            if ([controller respondsToSelector:@selector(presentAnimated:completion:)]) {
+                [controller presentAnimated:YES completion:nil];
+                opened = YES;
+            } else if ([controller respondsToSelector:@selector(presentAnimated:)]) {
+                [controller presentAnimated:YES];
+                opened = YES;
+            } else {
+                SRLog(@"No supported Control Center present selector");
+            }
+        });
+        return opened ? @"Control Center opened\n" : @"Failed to open Control Center\n";
     } else if ([cleanCmd isEqualToString:@"is-locked"]) {
         // Query lock state
         // Use dispatch_sync to wait for result from main thread
@@ -2233,9 +2291,9 @@ static NSString *handle_command(NSString *cmd) {
             }
 
             if (UIInterfaceOrientationIsPortrait(orientation)) {
-                res = @"PORTRAIT";
+                res = @"Portrait";
             } else if (UIInterfaceOrientationIsLandscape(orientation)) {
-                res = @"LANDSCAPE";
+                res = @"Landscape";
             }
         });
         return [NSString stringWithFormat:@"%@\n", res];
@@ -4698,6 +4756,11 @@ static BOOL g_statusBarSwipeTriggered = NO;
                 g_statusBarHoldTimer = [NSTimer scheduledTimerWithTimeInterval:0.3 repeats:NO block:^(NSTimer *timer) {
                     g_statusBarHoldTimer = nil;
                     
+                    // Ignore stale timer callbacks (e.g., touch already ended/cancelled).
+                    if (!g_statusBarTouchActive || g_statusBarSwipeTriggered || !g_pendingStatusBarTrigger) {
+                        return;
+                    }
+
                     if (g_pendingStatusBarTrigger) {
                         load_trigger_config();
                         BOOL enabled = [g_triggerConfig[@"masterEnabled"] boolValue] && 
@@ -4766,6 +4829,7 @@ static BOOL g_statusBarSwipeTriggered = NO;
                     if ((abs_udx > 15 || abs_udy > 15) && g_statusBarHoldTimer) {
                         [g_statusBarHoldTimer invalidate];
                         g_statusBarHoldTimer = nil;
+                        g_pendingStatusBarTrigger = nil;
                     }
                     
                     if (isHoz && abs_udx > 15 && !g_statusBarSwipeHapticFired) {
@@ -4798,6 +4862,12 @@ static BOOL g_statusBarSwipeTriggered = NO;
                 
                 // --- Gesture Finalized ---
                 if (isEnded) {
+                    if (g_statusBarHoldTimer) {
+                        [g_statusBarHoldTimer invalidate];
+                        g_statusBarHoldTimer = nil;
+                    }
+                    g_pendingStatusBarTrigger = nil;
+
                     if (g_statusBarTouchActive && !g_statusBarHoldTriggered && !g_statusBarSwipeTriggered) {
                         if (isHoz && abs_udx > 40) {
                             NSString *trigger = (user_dx > 0) ? @"trigger_statusbar_swipe_right" : @"trigger_statusbar_swipe_left";

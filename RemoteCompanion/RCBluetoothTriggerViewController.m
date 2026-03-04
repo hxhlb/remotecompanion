@@ -30,12 +30,29 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = @"Bluetooth Trigger";
-    self.view.backgroundColor = [UIColor systemBackgroundColor];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self 
+                                             selector:@selector(applyTweaks) 
+                                                 name:@"RCConfigTweaksChangedNotification" 
+                                               object:nil];
+    
+    [self applyTweaks];
     self.isDisconnectTrigger = NO;
     self.isLoading = YES;
     
     [self loadBluetoothDevices];
 }
+
+- (void)applyTweaks {
+    RCConfigManager *cm = [RCConfigManager sharedManager];
+    UIColor *bg = [cm tweakColorForKey:@"mainBackground" defaultVal:0.09];
+    self.view.backgroundColor = bg;
+    self.navigationController.navigationBar.backgroundColor = bg;
+    self.tableView.backgroundColor = bg;
+    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.30];
+    [self.tableView reloadData];
+}
+
 
 - (void)loadBluetoothDevices {
     [[RCServerClient sharedClient] executeCommand:@"bluetooth list" completion:^(NSString * _Nullable output, NSError * _Nullable error) {

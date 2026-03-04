@@ -110,7 +110,7 @@
     self.view.backgroundColor = settingsBG;
     self.tableView.backgroundColor = settingsBG;
     self.navigationController.navigationBar.backgroundColor = [cm tweakColorForKey:@"navBar" defaultVal:0.09];
-    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.35];
+    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.30];
     [self.tableView reloadData];
 }
 
@@ -152,7 +152,7 @@
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    if (section == 0) return 3; // Master + NFC + Tweaker
+    if (section == 0) return 2; // Master + NFC
     return 2; // Export, Import
 }
 
@@ -163,10 +163,10 @@
     cell.backgroundColor = [cm tweakColorForKey:@"blockBackground" defaultVal:0.12];
     
     UIView *selBg = [[UIView alloc] init];
-    selBg.backgroundColor = [cm tweakColorForKey:@"selectionHighlight" defaultVal:0.14];
+    selBg.backgroundColor = [cm tweakColorForKey:@"selectionHighlight" defaultVal:0.15];
     cell.selectedBackgroundView = selBg;
 
-    cell.layer.borderColor = [cm tweakColorForKey:@"borders" defaultVal:0.15].CGColor;
+    cell.layer.borderColor = [cm tweakColorForKey:@"borders" defaultVal:0.14].CGColor;
     cell.layer.borderWidth = 1.0;
     cell.contentView.backgroundColor = [UIColor clearColor];
     
@@ -187,11 +187,6 @@
             [_nfcSwitch addTarget:self action:@selector(nfcToggleChanged:) forControlEvents:UIControlEventValueChanged];
             cell.accessoryView = _nfcSwitch;
             cell.selectionStyle = UITableViewCellSelectionStyleNone;
-        } else if (indexPath.row == 2) {
-            cell.textLabel.text = @"Open UI Tweaker";
-            cell.imageView.image = [UIImage systemImageNamed:@"slider.horizontal.3"];
-            cell.imageView.tintColor = [UIColor systemOrangeColor];
-            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
         }
     } else {
         if (indexPath.row == 0) {
@@ -213,9 +208,7 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
 
-    if (indexPath.section == 0 && indexPath.row == 2) {
-        [RCUITweaker show];
-    } else if (indexPath.section == 1) {
+    if (indexPath.section == 1) {
         if (indexPath.row == 0) {
             [self exportConfig];
         } else {

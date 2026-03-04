@@ -108,7 +108,7 @@
     RCConfigManager *cm = [RCConfigManager sharedManager];
     self.view.backgroundColor = [cm tweakColorForKey:@"mainBackground" defaultVal:0.09];
     self.navigationController.navigationBar.backgroundColor = [cm tweakColorForKey:@"navBar" defaultVal:0.09];
-    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.35];
+    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.30];
     [self.tableView reloadData];
 }
 
@@ -194,57 +194,40 @@
         [titles addObject:@"Favorites"];
     }
 
-    // Standard Sections (filtered to exclude favorites)
-    [sections addObject:filterFavorites(@[@"volume_up_hold", @"volume_down_hold", @"volume_both_press"])];
-    [titles addObject:@"Volume Buttons"];
+    // Helper to add section
+    void (^addSection)(NSArray *, NSString *, BOOL) = ^(NSArray *keys, NSString *title, BOOL hideIfEmpty) {
+        NSArray *filtered = filterFavorites(keys);
+        if (filtered.count > 0 || !hideIfEmpty) {
+            [sections addObject:filtered];
+            [titles addObject:title];
+        }
+    };
 
-    [sections addObject:filterFavorites(@[@"power_double_tap", @"power_triple_click", @"power_quadruple_click", @"power_volume_up", @"power_volume_down", @"power_long_press"])];
-    [titles addObject:@"Power Button"];
+    // Standard Sections (Always show headers)
+    addSection(@[@"volume_up_hold", @"volume_down_hold", @"volume_both_press"], @"Volume Buttons", NO);
+    addSection(@[@"power_double_tap", @"power_triple_click", @"power_quadruple_click", @"power_volume_up", @"power_volume_down", @"power_long_press"], @"Power Button", NO);
+    addSection(@[@"trigger_statusbar_left_hold", @"trigger_statusbar_center_hold", @"trigger_statusbar_right_hold", @"trigger_statusbar_swipe_left", @"trigger_statusbar_swipe_right"], @"Screen Gestures", NO);
+    addSection(@[@"trigger_edge_left_swipe_up", @"trigger_edge_left_swipe_down", @"trigger_edge_right_swipe_up", @"trigger_edge_right_swipe_down"], @"Edge Gestures", NO);
+    addSection(@[@"trigger_bottombar_swipe_left", @"trigger_bottombar_swipe_right"], @"Bottom Bar Gestures", NO);
+    addSection(@[@"trigger_home_double_click", @"trigger_home_triple_click", @"trigger_home_quadruple_click", @"touchid_tap", @"touchid_hold"], @"Home Button", NO);
+    addSection(@[@"trigger_ringer_mute", @"trigger_ringer_unmute", @"trigger_ringer_toggle"], @"Ringer Switch", NO);
 
-    [sections addObject:filterFavorites(@[@"trigger_statusbar_left_hold", @"trigger_statusbar_center_hold", @"trigger_statusbar_right_hold", @"trigger_statusbar_swipe_left", @"trigger_statusbar_swipe_right"])];
-    [titles addObject:@"Screen Gestures"];
-
-    [sections addObject:filterFavorites(@[@"trigger_edge_left_swipe_up", @"trigger_edge_left_swipe_down", @"trigger_edge_right_swipe_up", @"trigger_edge_right_swipe_down"])];
-    [titles addObject:@"Edge Gestures"];
-
-    // Section 4: Bottom Bar Gestures
-    [sections addObject:filterFavorites(@[@"trigger_bottombar_swipe_left", @"trigger_bottombar_swipe_right"])];
-    [titles addObject:@"Bottom Bar Gestures"];
-
-    [sections addObject:filterFavorites(@[@"trigger_home_double_click", @"trigger_home_triple_click", @"trigger_home_quadruple_click", @"touchid_tap", @"touchid_hold"])];
-    [titles addObject:@"Home Button"];
-
-    [sections addObject:filterFavorites(@[@"trigger_ringer_mute", @"trigger_ringer_unmute", @"trigger_ringer_toggle"])];
-    [titles addObject:@"Ringer Switch"];
-
-    // NFC Section (filtered to exclude favorites)
-    NSMutableArray *nfcKeys = [[[RCConfigManager sharedManager] nfcTriggerKeys] mutableCopy];
-    NSArray *filteredNFC = filterFavorites(nfcKeys);
-    NSMutableArray *nfcWithAdd = [filteredNFC mutableCopy];
-    [nfcWithAdd addObject:@"__ADD_NEW_NFC__"];
-
-    [sections addObject:nfcWithAdd];
-    [titles addObject:@"NFC Tags"];
+    // Dynamic Sections (Hide if empty/favorited)
+    addSection([[RCConfigManager sharedManager] nfcTriggerKeys], @"NFC Tags", YES);
 
     // WiFi Section
     NSMutableArray *wifiKeys = [NSMutableArray array];
     for (NSString *key in [[RCConfigManager sharedManager] allConfiguredTriggerKeys]) {
         if ([key hasPrefix:@"wifi_"]) [wifiKeys addObject:key];
     }
-    if (wifiKeys.count > 0) {
-        [sections addObject:filterFavorites(wifiKeys)];
-        [titles addObject:@"WiFi Network Triggers"];
-    }
+    addSection(wifiKeys, @"WiFi Network Triggers", YES);
 
     // Bluetooth Section
     NSMutableArray *btKeys = [NSMutableArray array];
     for (NSString *key in [[RCConfigManager sharedManager] allConfiguredTriggerKeys]) {
         if ([key hasPrefix:@"bt_"]) [btKeys addObject:key];
     }
-    if (btKeys.count > 0) {
-        [sections addObject:filterFavorites(btKeys)];
-        [titles addObject:@"Bluetooth Device Triggers"];
-    }
+    addSection(btKeys, @"Bluetooth Device Triggers", YES);
 
     self.sections = sections;
     self.sectionTitles = titles;
@@ -333,8 +316,8 @@
 - (void)applySectionCardStyleToCell:(UITableViewCell *)cell atIndexPath:(NSIndexPath *)indexPath {
     RCConfigManager *config = [RCConfigManager sharedManager];
     UIColor *fillColor = [config tweakColorForKey:@"blockBackground" defaultVal:0.12];
-    UIColor *selectedFillColor = [config tweakColorForKey:@"selectionHighlight" defaultVal:0.14];
-    UIColor *borderColor = [config tweakColorForKey:@"borders" defaultVal:0.15];
+    UIColor *selectedFillColor = [config tweakColorForKey:@"selectionHighlight" defaultVal:0.15];
+    UIColor *borderColor = [config tweakColorForKey:@"borders" defaultVal:0.14];
     
     NSInteger rowCount = [self.tableView numberOfRowsInSection:indexPath.section];
     if (rowCount < 1) {
@@ -449,7 +432,6 @@
     if (!indexPath) return;
     
     NSString *triggerKey = _sections[indexPath.section][indexPath.row];
-    if ([triggerKey isEqualToString:@"__ADD_NEW_NFC__"]) return;
     
     RCConfigManager *config = [RCConfigManager sharedManager];
     NSArray *actions = [config actionsForTrigger:triggerKey];
@@ -490,7 +472,7 @@
 
     // Yellow text for Favorites section
     if ([_sectionTitles[section] isEqualToString:@"Favorites"]) {
-        label.textColor = [UIColor colorWithRed:227/255.0 green:190/255.0 blue:104/255.0 alpha:1.0];
+        label.textColor = [UIColor colorWithRed:242/255.0 green:195/255.0 blue:80/255.0 alpha:1.0];
     } else {
         label.textColor = [UIColor secondaryLabelColor];
     }
@@ -509,21 +491,6 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSString *triggerKey = _sections[indexPath.section][indexPath.row];
-    
-    if ([triggerKey isEqualToString:@"__ADD_NEW_NFC__"]) {
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"AddCell"];
-        if (!cell) {
-            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"AddCell"];
-        }
-        cell.textLabel.text = @"Scan New NFC Tag...";
-        cell.textLabel.textColor = [UIColor systemBlueColor];
-        cell.imageView.image = [UIImage systemImageNamed:@"plus.circle.fill"];
-        cell.accessoryType = UITableViewCellAccessoryNone;
-        cell.detailTextLabel.text = nil;
-        [self applySectionCardStyleToCell:cell atIndexPath:indexPath];
-        return cell;
-    }
-    
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"TriggerCell"];
     if (!cell) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"TriggerCell"];
@@ -579,18 +546,12 @@
     
     NSString *triggerKey = _sections[indexPath.section][indexPath.row];
     
-    if ([triggerKey isEqualToString:@"__ADD_NEW_NFC__"]) {
-        [self startNFCScan];
-        return;
-    }
-    
     RCActionsViewController *actionsVC = [[RCActionsViewController alloc] initWithTriggerKey:triggerKey];
     [self.navigationController pushViewController:actionsVC animated:YES];
 }
 
 - (UISwipeActionsConfiguration *)tableView:(UITableView *)tableView leadingSwipeActionsConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSString *triggerKey = _sections[indexPath.section][indexPath.row];
-    if ([triggerKey isEqualToString:@"__ADD_NEW_NFC__"]) return nil;
 
     RCConfigManager *config = [RCConfigManager sharedManager];
     BOOL isFavorite = [config isTriggerFavorite:triggerKey];
@@ -606,16 +567,14 @@
             completionHandler(YES);
         }];
 
-    favoriteAction.backgroundColor = isFavorite ? [UIColor systemGrayColor] : [UIColor colorWithRed:227/255.0 green:190/255.0 blue:104/255.0 alpha:1.0];
+    favoriteAction.backgroundColor = isFavorite ? [UIColor systemGrayColor] : [UIColor colorWithRed:242/255.0 green:195/255.0 blue:80/255.0 alpha:1.0];
     favoriteAction.image = [UIImage systemImageNamed:isFavorite ? @"star.slash.fill" : @"star.fill"];
 
     return [UISwipeActionsConfiguration configurationWithActions:@[favoriteAction]];
 }
 
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
-    NSString *triggerKey = _sections[indexPath.section][indexPath.row];
-    // Allow editing for all triggers except the "Add NFC" row
-    return ![triggerKey isEqualToString:@"__ADD_NEW_NFC__"];
+    return YES;
 }
 
 - (UISwipeActionsConfiguration *)tableView:(UITableView *)tableView trailingSwipeActionsConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath {
