@@ -845,8 +845,8 @@ static void load_blacklist() {
     NSString *path = @"/var/mobile/Library/Preferences/com.saihgupr.remotecompanion.blacklist.plist";
     g_blacklist = [NSArray arrayWithContentsOfFile:path];
     if (!g_blacklist) {
-        // Default hardcoded fallback
-        g_blacklist = @[@"com.apple.compass", @"com.chase"];
+        // Empty by default for new users
+        g_blacklist = @[];
     }
     g_lastBlacklistLoad = [[NSDate date] timeIntervalSince1970];
 }

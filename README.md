@@ -190,11 +190,6 @@ Use the `rc blacklist` command to manage the list:
 *   `rc blacklist remove <bundleID>`: Remove an app from the blacklist.
 *   `rc blacklist reset`: Reset the blacklist to the factory defaults.
 
-### Default Blacklist
-By default, the following are excluded:
-*   `com.apple.compass`
-*   `com.chase` (Deny-list protection for banking apps)
-
 </details>
 
 ## Getting Started
