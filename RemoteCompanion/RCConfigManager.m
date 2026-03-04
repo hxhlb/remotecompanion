@@ -412,6 +412,32 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
     notify_post("com.pizzaman.rc.stop_nfc");
 }
 
+#pragma mark - UI Color Tweaks
+
+- (NSDictionary *)colorTweaks {
+    return _config[@"colorTweaks"] ?: @{};
+}
+
+- (void)setColorTweaks:(NSDictionary *)tweaks {
+    _config[@"colorTweaks"] = [tweaks mutableCopy];
+    [self saveConfig];
+}
+
+- (CGFloat)tweakValueForKey:(NSString *)key defaultVal:(CGFloat)defaultVal {
+    NSDictionary *tweaks = [self colorTweaks];
+    if (tweaks[key] != nil) {
+        return [tweaks[key] floatValue];
+    }
+    return defaultVal;
+}
+
+- (UIColor *)tweakColorForKey:(NSString *)key defaultVal:(CGFloat)defaultVal {
+    CGFloat val = [self tweakValueForKey:key defaultVal:defaultVal];
+    // We are working with monochrome, so we just use the val as white
+    return [UIColor colorWithWhite:val alpha:1.0];
+}
+
+
 #pragma mark - Backup/Restore
 
 - (NSData *)exportConfigAsJSON {

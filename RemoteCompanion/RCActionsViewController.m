@@ -67,7 +67,13 @@
     // Enable Large Titles
     self.navigationController.navigationBar.prefersLargeTitles = YES;
     self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeAlways;
-    self.view.backgroundColor = [UIColor systemBackgroundColor];
+    
+    // Listen for color tweak changes
+    [[NSNotificationCenter defaultCenter] addObserver:self 
+                                             selector:@selector(handleTweaksChanged:) 
+                                                 name:@"RCConfigTweaksChangedNotification" 
+                                               object:nil];
+    [self applyTweaks];
     
     // Load actions
     _actions = [[[RCConfigManager sharedManager] actionsForTrigger:_triggerKey] mutableCopy];
@@ -85,6 +91,18 @@
 
     [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"ActionCell"];
     self.tableView.rowHeight = 70; // Fixed height as in V2.1.2
+}
+
+- (void)handleTweaksChanged:(NSNotification *)note {
+    [self applyTweaks];
+}
+
+- (void)applyTweaks {
+    RCConfigManager *cm = [RCConfigManager sharedManager];
+    self.view.backgroundColor = [cm tweakColorForKey:@"mainBackground" defaultVal:0.0];
+    self.navigationController.navigationBar.backgroundColor = [cm tweakColorForKey:@"navBar" defaultVal:0.05];
+    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.2];
+    [self.tableView reloadData];
 }
 
 - (void)renameTrigger {
@@ -879,6 +897,26 @@
     if (!cell) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"ActionCell"];
     }
+    
+    RCConfigManager *cm = [RCConfigManager sharedManager];
+    cell.backgroundColor = [cm tweakColorForKey:@"blockBackground" defaultVal:0.1];
+    
+    UIView *selBg = [[UIView alloc] init];
+    selBg.backgroundColor = [cm tweakColorForKey:@"selectionHighlight" defaultVal:0.2];
+    cell.selectedBackgroundView = selBg;
+    
+    cell.layer.borderColor = [cm tweakColorForKey:@"borders" defaultVal:0.3].CGColor;
+    cell.layer.borderWidth = 1.0;
+    
+    // Use clear background for the content view to let cell background show
+    cell.contentView.backgroundColor = [UIColor clearColor];
+    
+    // Apply shadows
+    cell.layer.shadowColor = [cm tweakColorForKey:@"shadowBrightness" defaultVal:0.0].CGColor;
+    cell.layer.shadowOpacity = [cm tweakValueForKey:@"shadowOpacity" defaultVal:0.5];
+    cell.layer.shadowOffset = CGSizeMake(0, 2);
+    cell.layer.shadowRadius = 4.0;
+    cell.layer.masksToBounds = NO;
 
     id actionItem = _actions[indexPath.row];
     NSString *cleanName = [self displayNameForCommand:actionItem];

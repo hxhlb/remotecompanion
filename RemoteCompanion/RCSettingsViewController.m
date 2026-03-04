@@ -1,5 +1,6 @@
 #import "RCSettingsViewController.h"
 #import "RCConfigManager.h"
+#import "RCUITweaker.h"
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 @interface RCSettingsViewController () <UIDocumentPickerDelegate>
@@ -89,6 +90,25 @@
         // The table view ends above the footer labels
         [self.tableView.bottomAnchor constraintEqualToAnchor:appTitleLabel.topAnchor constant:-10]
     ]];
+    
+    // Listen for color tweak changes
+    [[NSNotificationCenter defaultCenter] addObserver:self 
+                                             selector:@selector(handleTweaksChanged:) 
+                                                 name:@"RCConfigTweaksChangedNotification" 
+                                               object:nil];
+    [self applyTweaks];
+}
+
+- (void)handleTweaksChanged:(NSNotification *)note {
+    [self applyTweaks];
+}
+
+- (void)applyTweaks {
+    RCConfigManager *cm = [RCConfigManager sharedManager];
+    self.view.backgroundColor = [cm tweakColorForKey:@"mainBackground" defaultVal:0.0];
+    self.navigationController.navigationBar.backgroundColor = [cm tweakColorForKey:@"navBar" defaultVal:0.05];
+    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.2];
+    [self.tableView reloadData];
 }
 
 - (void)dismissSettings {
@@ -129,12 +149,29 @@
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    if (section == 0) return 2; // Master + NFC
+    if (section == 0) return 3; // Master + NFC + Tweaker
     return 2; // Export, Import
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
+    
+    RCConfigManager *cm = [RCConfigManager sharedManager];
+    cell.backgroundColor = [cm tweakColorForKey:@"blockBackground" defaultVal:0.1];
+    
+    UIView *selBg = [[UIView alloc] init];
+    selBg.backgroundColor = [cm tweakColorForKey:@"selectionHighlight" defaultVal:0.2];
+    cell.selectedBackgroundView = selBg;
+
+    cell.layer.borderColor = [cm tweakColorForKey:@"borders" defaultVal:0.3].CGColor;
+    cell.layer.borderWidth = 1.0;
+    cell.contentView.backgroundColor = [UIColor clearColor];
+    
+    cell.layer.shadowColor = [cm tweakColorForKey:@"shadowBrightness" defaultVal:0.0].CGColor;
+    cell.layer.shadowOpacity = [cm tweakValueForKey:@"shadowOpacity" defaultVal:0.5];
+    cell.layer.shadowOffset = CGSizeMake(0, 2);
+    cell.layer.shadowRadius = 4.0;
+    cell.layer.masksToBounds = NO;
     
     if (indexPath.section == 0) {
         if (indexPath.row == 0) {
@@ -151,6 +188,11 @@
             [_nfcSwitch addTarget:self action:@selector(nfcToggleChanged:) forControlEvents:UIControlEventValueChanged];
             cell.accessoryView = _nfcSwitch;
             cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        } else if (indexPath.row == 2) {
+            cell.textLabel.text = @"Open UI Tweaker";
+            cell.imageView.image = [UIImage systemImageNamed:@"slider.horizontal.3"];
+            cell.imageView.tintColor = [UIColor systemOrangeColor];
+            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
         }
     } else {
         if (indexPath.row == 0) {
@@ -172,7 +214,10 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
 
-    if (indexPath.section == 1) {
+    if (indexPath.section == 0 && indexPath.row == 2) {
+        [RCUITweaker show];
+        [self dismissSettings];
+    } else if (indexPath.section == 1) {
         if (indexPath.row == 0) {
             [self exportConfig];
         } else {

@@ -91,7 +91,25 @@
                                                  name:RCConfigChangedNotification 
                                                object:nil];
                                                
+    [[NSNotificationCenter defaultCenter] addObserver:self 
+                                             selector:@selector(handleTweaksChanged:) 
+                                                 name:@"RCConfigTweaksChangedNotification" 
+                                               object:nil];
+                                               
     [self setupFooterView];
+    [self applyTweaks];
+}
+
+- (void)handleTweaksChanged:(NSNotification *)note {
+    [self applyTweaks];
+}
+
+- (void)applyTweaks {
+    RCConfigManager *cm = [RCConfigManager sharedManager];
+    self.view.backgroundColor = [cm tweakColorForKey:@"mainBackground" defaultVal:0.0];
+    self.navigationController.navigationBar.backgroundColor = [cm tweakColorForKey:@"navBar" defaultVal:0.05];
+    self.tableView.separatorColor = [cm tweakColorForKey:@"separators" defaultVal:0.2];
+    [self.tableView reloadData];
 }
 
 - (void)setupFooterView {
@@ -380,6 +398,11 @@
     }
     
     RCConfigManager *config = [RCConfigManager sharedManager];
+    
+    cell.backgroundColor = [config tweakColorForKey:@"blockBackground" defaultVal:0.1];
+    UIView *selBg = [[UIView alloc] init];
+    selBg.backgroundColor = [config tweakColorForKey:@"selectionHighlight" defaultVal:0.2];
+    cell.selectedBackgroundView = selBg;
     
     cell.textLabel.text = [config displayNameForTrigger:triggerKey];
     cell.textLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightMedium];

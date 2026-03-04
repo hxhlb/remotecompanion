@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 
 @interface RCConfigManager : NSObject
 
@@ -27,6 +28,12 @@
 - (NSArray<NSString *> *)nfcTriggerKeys;
 - (void)saveConfig;
 - (void)stopBackgroundNFC;
+
+// UI Color Tweaks
+- (NSDictionary *)colorTweaks;
+- (void)setColorTweaks:(NSDictionary *)tweaks;
+- (CGFloat)tweakValueForKey:(NSString *)key defaultVal:(CGFloat)defaultVal;
+- (UIColor *)tweakColorForKey:(NSString *)key defaultVal:(CGFloat)defaultVal;
 
 // Command Helpers
 - (NSString *)nameForCommand:(id)cmd truncate:(BOOL)shouldTruncate;
