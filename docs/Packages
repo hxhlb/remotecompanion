@@ -163,6 +163,25 @@ SHA256: dde9c5528b014be0ce6e3e0cead04061b6dec8861db009458db45613b6cadfaf
 Package: com.saihgupr.remotecompanion
 Name: RemoteCompanion
 Depends: mobilesubstrate, firmware (>= 14.0)
+Description: A modern Activator replacement for rootless and rootful jailbreaks. Bind triggers like Touch ID, Power/Volume buttons, and Status Bar gestures to system actions, Siri automation, and custom TCP commands. Includes native arm64e support for iOS 14. https://github.com/saihgupr/RemoteCompanion
+Maintainer: Saihgupr
+Author: Saihgupr
+Section: Tweaks
+Icon: https://saihgupr.github.io/remotecompanion/CydiaIcon.png
+Replaces: com.pizzaman.remotecommand
+Conflicts: com.pizzaman.remotecommand
+Architecture: iphoneos-arm64
+Version: 2.3.0
+Installed-Size: 1428
+Filename: ./com.saihgupr.remotecompanion_2.3.0_iphoneos-arm64.deb
+Size: 296476
+MD5sum: c51383346cd12eb37fb065581a5380af
+SHA1: fa91b526b05819959880f60b748578d9f01c6981
+SHA256: 73e2c2b32683c521bff9fed9ff5aafbdcb144cae479ee8e94cf3bc1eb7965397
+
+Package: com.saihgupr.remotecompanion
+Name: RemoteCompanion
+Depends: mobilesubstrate, firmware (>= 14.0)
 Description: A modern Activator replacement for rootless jailbreaks. Bind triggers like Touch ID, Power/Volume buttons, and Status Bar gestures to system actions, Siri automation, and custom TCP commands. https://github.com/saihgupr/RemoteCompanion
 Maintainer: Saihgupr
 Author: Saihgupr
@@ -285,6 +304,25 @@ Size: 305026
 MD5sum: 54925420052e712c6b84fef98bcb23f8
 SHA1: 6810439eb455e7634d893aec6e9909cb4e63884b
 SHA256: 56b2c3551f7a5e639d4134065f3869d818d7dc4333908bbcd49b707a8b40596a
+
+Package: com.saihgupr.remotecompanion
+Name: RemoteCompanion
+Depends: mobilesubstrate, firmware (>= 14.0)
+Description: A modern Activator replacement for rootless and rootful jailbreaks. Bind triggers like Touch ID, Power/Volume buttons, and Status Bar gestures to system actions, Siri automation, and custom TCP commands. Includes native arm64e support for iOS 14. https://github.com/saihgupr/RemoteCompanion
+Maintainer: Saihgupr
+Author: Saihgupr
+Section: Tweaks
+Icon: https://saihgupr.github.io/remotecompanion/CydiaIcon.png
+Replaces: com.pizzaman.remotecommand
+Conflicts: com.pizzaman.remotecommand
+Architecture: iphoneos-arm
+Version: 2.3.0
+Installed-Size: 1428
+Filename: ./com.saihgupr.remotecompanion_2.3.0_iphoneos-arm.deb
+Size: 296802
+MD5sum: b1b8de6620008c7e41f7fc61b8be0a15
+SHA1: 0896b1c7e278e30d849f3c2e7a4575f394eb37a9
+SHA256: 224cc011ede8e9dbaba0a555abaa6e1f6d9b1f35a14802012204f5a97d4886df
 
 Package: com.saihgupr.remotecompanion
 Name: RemoteCompanion
