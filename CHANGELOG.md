@@ -4,9 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [2.4.0~beta1] - 2026-03-23
 
+### Added
+- **Conditional Actions ("Else" Branch)**: "If" actions now support an optional "Else" branch. Long-press any "If" action in the sequence list to toggle the Else branch on or off.
+- **Edit Condition**: Added a native "Edit Condition" option to the long-press menu for "If" actions, allowing you to swap conditions or values without deleting the entire block.
+
 ### Fixed
 - **Action UI**: Improved readability of the action sequence list. Terminal commands and Lua scripts now show their actual code in the main label for faster identification.
 - **Truncation Logic**: Switched to tail truncation for long commands, ensuring the most relevant code is visible at a glance.
+- **Visual Polish**: "Else" and "End If" markers now use consistent secondary styling to clearly demarcate control flow blocks.
 
 ## [2.3.0] - 2026-03-04
 

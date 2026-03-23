@@ -653,13 +653,13 @@
                                                             preferredStyle:UIAlertControllerStyleActionSheet];
     
     if (hasElse) {
-        [alert addAction:[UIAlertAction actionWithTitle:@"Remove Else Branch" style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {
+        [alert addAction:[UIAlertAction actionWithTitle:@"Remove Else" style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {
             [self.actions removeObjectAtIndex:elseIndex];
             [self saveActions];
             [self.tableView reloadData];
         }]];
     } else {
-        [alert addAction:[UIAlertAction actionWithTitle:@"Add Else Branch" style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
+        [alert addAction:[UIAlertAction actionWithTitle:@"Add Else" style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
             NSInteger endIndex = [self matchingEndIndexForIfAtIndex:indexPath.row];
             if (endIndex != NSNotFound) {
                 [self.actions insertObject:@{ @"type": @"else" } atIndex:endIndex];
@@ -668,6 +668,10 @@
             }
         }]];
     }
+    
+    [alert addAction:[UIAlertAction actionWithTitle:@"Edit Condition" style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
+        [self presentIfConditionPickerForIndex:indexPath.row];
+    }]];
     
     [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
     [self configurePopoverSourceForAlert:alert];
