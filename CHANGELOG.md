@@ -5,11 +5,16 @@ All notable changes to this project will be documented in this file.
 ## [2.4.0~beta1] - 2026-03-23
 
 ### Added
+- **App Launch Trigger**: Added a new trigger type that fires when a specific application is opened. Features a built-in search-enabled app picker.
 - **Conditional Actions ("Else" Branch)**: "If" actions now support an optional "Else" branch. Long-press any "If" action in the sequence list to toggle the Else branch on or off.
 - **Conditional Actions ("Front Application")**: Added a new condition type to check the currently active foreground application. Integrated the native app picker for easy configuration.
 - **Edit Condition**: Added a native "Edit Condition" option to the long-press menu for "If" actions, allowing you to swap conditions or values without deleting the entire block.
 
+### Improved
+- **Trigger Workflow**: Creating a new trigger (App Launch, NFC, etc.) now automatically redirects you to the action sequence configuration immediately for a faster setup process.
+
 ### Fixed
+- **App Launch Reliability**: Re-engineered the launch detection hook using `SpringBoard frontDisplayDidChange:` with a micro-delay, ensuring the active app is correctly identified on modern iOS versions.
 - **Action UI**: Improved readability of the action sequence list. Terminal commands and Lua scripts now show their actual code in the main label for faster identification.
 - **Truncation Logic**: Switched to tail truncation for long commands, ensuring the most relevant code is visible at a glance.
 - **Visual Polish**: "Else" and "End If" markers now use consistent secondary styling to clearly demarcate control flow blocks.
