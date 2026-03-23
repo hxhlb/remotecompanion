@@ -17,20 +17,11 @@
 
 @implementation RCActionsViewController
 
-// Helper methods moved to RCConfigManager for consistency
 - (NSString *)displayNameForCommand:(id)cmd {
-    if ([self isIfActionItem:cmd]) {
-        return [NSString stringWithFormat:@"If %@ is %@", cmd[@"conditionTitle"], cmd[@"expectedValue"]];
-    }
-    if ([self isElseActionItem:cmd]) return @"Else";
-    if ([self isEndIfActionItem:cmd]) return @"End If";
     return [[RCConfigManager sharedManager] nameForCommand:cmd truncate:YES];
 }
 
 - (NSString *)iconForCommand:(id)cmd {
-    if ([self isIfActionItem:cmd]) return @"questionmark.circle";
-    if ([self isElseActionItem:cmd]) return @"arrow.uturn.right";
-    if ([self isEndIfActionItem:cmd]) return @"circle.fill";
     return [[RCConfigManager sharedManager] iconForCommand:cmd];
 }
 
