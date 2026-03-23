@@ -983,6 +983,12 @@ static BOOL rc_is_if_action_item(id item) {
     return [type isEqualToString:@"if"];
 }
 
+static BOOL rc_is_else_action_item(id item) {
+    if (![item isKindOfClass:[NSDictionary class]]) return NO;
+    NSString *type = [[((NSDictionary *)item)[@"type"] description] lowercaseString];
+    return [type isEqualToString:@"else"];
+}
+
 static BOOL rc_is_end_if_action_item(id item) {
     if (![item isKindOfClass:[NSDictionary class]]) return NO;
     NSString *type = [[((NSDictionary *)item)[@"type"] description] lowercaseString];
@@ -1001,6 +1007,25 @@ static NSInteger rc_matching_end_if_index(NSArray *actions, NSInteger startIndex
         } else if (rc_is_end_if_action_item(item)) {
             depth--;
             if (depth == 0) return idx;
+        }
+    }
+    return NSNotFound;
+}
+
+static NSInteger rc_matching_else_index(NSArray *actions, NSInteger startIndex) {
+    if (startIndex < 0 || startIndex >= (NSInteger)actions.count) return NSNotFound;
+    if (!rc_is_if_action_item(actions[startIndex])) return NSNotFound;
+    
+    NSInteger depth = 0;
+    for (NSInteger idx = startIndex; idx < (NSInteger)actions.count; idx++) {
+        id item = actions[idx];
+        if (rc_is_if_action_item(item)) {
+            depth++;
+        } else if (rc_is_end_if_action_item(item)) {
+            depth--;
+            if (depth == 0) return NSNotFound; // Hit end before else
+        } else if (rc_is_else_action_item(item)) {
+            if (depth == 1) return idx;
         }
     }
     return NSNotFound;
@@ -1113,13 +1138,40 @@ static void rc_execute_action_sequence(NSArray *actions, NSString *triggerKey, B
             BOOL shouldRunBlock = rc_evaluate_if_condition(dictAction);
             SRLog(@"[%@] If %@ == %@ -> %@", triggerKey, dictAction[@"conditionKey"], dictAction[@"expectedValue"], shouldRunBlock ? @"TRUE" : @"FALSE");
             
-            if (!shouldRunBlock) {
-                NSInteger endIndex = rc_matching_end_if_index(actions, idx);
-                if (endIndex == NSNotFound) {
-                    SRLog(@"[%@] Missing End If marker; stopping action execution.", triggerKey);
-                    break;
+            if (shouldRunBlock) {
+                // TRUE branch: just continue to next item. 
+                // But we need to skip the else branch if it exists later.
+            } else {
+                // FALSE branch: find else or end_if
+                NSInteger elseIndex = rc_matching_else_index(actions, idx);
+                if (elseIndex != NSNotFound) {
+                    idx = elseIndex;
+                } else {
+                    NSInteger endIndex = rc_matching_end_if_index(actions, idx);
+                    if (endIndex == NSNotFound) {
+                        SRLog(@"[%@] Missing End If marker; stopping action execution.", triggerKey);
+                        break;
+                    }
+                    idx = endIndex;
                 }
-                idx = endIndex;
+            }
+        } else if ([type isEqualToString:@"else"]) {
+            // If we reached an 'else' directly, it means we were executing the TRUE branch of an 'if'.
+            // Now we must skip the FALSE branch (until the matching end_if).
+            // Find the original 'if' to get the matching 'end_if'? 
+            // Actually easier to just find the next end_if at the same depth.
+            NSInteger depth = 1;
+            for (NSInteger skipIdx = idx + 1; skipIdx < (NSInteger)actions.count; skipIdx++) {
+                id item = actions[skipIdx];
+                if (rc_is_if_action_item(item)) {
+                    depth++;
+                } else if (rc_is_end_if_action_item(item)) {
+                    depth--;
+                    if (depth == 0) {
+                        idx = skipIdx;
+                        break;
+                    }
+                }
             }
         } else if ([type isEqualToString:@"end_if"] || [type isEqualToString:@"end"]) {
             continue;

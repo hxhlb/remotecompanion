@@ -19,10 +19,18 @@
 
 // Helper methods moved to RCConfigManager for consistency
 - (NSString *)displayNameForCommand:(id)cmd {
+    if ([self isIfActionItem:cmd]) {
+        return [NSString stringWithFormat:@"If %@ is %@", cmd[@"conditionTitle"], cmd[@"expectedValue"]];
+    }
+    if ([self isElseActionItem:cmd]) return @"Else";
+    if ([self isEndIfActionItem:cmd]) return @"End If";
     return [[RCConfigManager sharedManager] nameForCommand:cmd truncate:YES];
 }
 
 - (NSString *)iconForCommand:(id)cmd {
+    if ([self isIfActionItem:cmd]) return @"questionmark.circle";
+    if ([self isElseActionItem:cmd]) return @"arrow.uturn.right";
+    if ([self isEndIfActionItem:cmd]) return @"circle.fill";
     return [[RCConfigManager sharedManager] iconForCommand:cmd];
 }
 
@@ -63,6 +71,10 @@
         
         self.navigationItem.titleView = titleLabel;
     }
+
+    UILongPressGestureRecognizer *lpgr = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+    lpgr.minimumPressDuration = 0.5;
+    [self.tableView addGestureRecognizer:lpgr];
     
     // Enable Large Titles
     self.navigationController.navigationBar.prefersLargeTitles = YES;
@@ -327,9 +339,36 @@
     return [[self actionTypeForItem:item] isEqualToString:@"if"];
 }
 
+- (BOOL)isElseActionItem:(id)item {
+    return [[self actionTypeForItem:item] isEqualToString:@"else"];
+}
+
 - (BOOL)isEndIfActionItem:(id)item {
     NSString *type = [self actionTypeForItem:item];
     return [type isEqualToString:@"end_if"] || [type isEqualToString:@"end"];
+}
+
+- (NSInteger)matchingElseIndexForIfAtIndex:(NSInteger)startIndex {
+    if (startIndex < 0 || startIndex >= (NSInteger)self.actions.count) {
+        return NSNotFound;
+    }
+    if (![self isIfActionItem:self.actions[startIndex]]) {
+        return NSNotFound;
+    }
+    
+    NSInteger depth = 0;
+    for (NSInteger idx = startIndex; idx < (NSInteger)self.actions.count; idx++) {
+        id item = self.actions[idx];
+        if ([self isIfActionItem:item]) {
+            depth++;
+        } else if ([self isEndIfActionItem:item]) {
+            depth--;
+            if (depth == 0) return NSNotFound;
+        } else if ([self isElseActionItem:item]) {
+            if (depth == 1) return idx;
+        }
+    }
+    return NSNotFound;
 }
 
 - (NSInteger)matchingEndIndexForIfAtIndex:(NSInteger)startIndex {
@@ -411,7 +450,7 @@
     }
     
     id current = self.actions[row];
-    if ([self isEndIfActionItem:current]) {
+    if ([self isEndIfActionItem:current] || [self isElseActionItem:current]) {
         return MAX(depth - 1, 0);
     }
     return depth;
@@ -594,6 +633,45 @@
         destinationIndex -= sourceRange.length;
     }
     return destinationIndex;
+}
+
+- (void)handleLongPress:(UILongPressGestureRecognizer *)gesture {
+    if (gesture.state != UIGestureRecognizerStateBegan) return;
+    
+    CGPoint touchPoint = [gesture locationInView:self.tableView];
+    NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:touchPoint];
+    if (!indexPath) return;
+    
+    id item = self.actions[indexPath.row];
+    if (![self isIfActionItem:item]) return;
+    
+    NSInteger elseIndex = [self matchingElseIndexForIfAtIndex:indexPath.row];
+    BOOL hasElse = (elseIndex != NSNotFound);
+    
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"If Action Options" 
+                                                                   message:nil 
+                                                            preferredStyle:UIAlertControllerStyleActionSheet];
+    
+    if (hasElse) {
+        [alert addAction:[UIAlertAction actionWithTitle:@"Remove Else Branch" style:UIAlertActionStyleDestructive handler:^(__unused UIAlertAction *action) {
+            [self.actions removeObjectAtIndex:elseIndex];
+            [self saveActions];
+            [self.tableView reloadData];
+        }]];
+    } else {
+        [alert addAction:[UIAlertAction actionWithTitle:@"Add Else Branch" style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
+            NSInteger endIndex = [self matchingEndIndexForIfAtIndex:indexPath.row];
+            if (endIndex != NSNotFound) {
+                [self.actions insertObject:@{ @"type": @"else" } atIndex:endIndex];
+                [self saveActions];
+                [self.tableView reloadData];
+            }
+        }]];
+    }
+    
+    [alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    [self configurePopoverSourceForAlert:alert];
+    [self presentViewController:alert animated:YES completion:nil];
 }
 
 - (NSInteger)adjustedDestinationIndexForDropCoordinator:(id<UITableViewDropCoordinator>)coordinator
@@ -1080,11 +1158,12 @@
     if ([actionItem isKindOfClass:[NSDictionary class]]) {
         cell.textLabel.text = cleanName;
         cell.textLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightMedium];
-        cell.textLabel.textColor = [self isEndIfActionItem:actionItem] ? [UIColor secondaryLabelColor] : [UIColor labelColor];
+        BOOL isControl = [self isEndIfActionItem:actionItem] || [self isElseActionItem:actionItem];
+        cell.textLabel.textColor = isControl ? [UIColor secondaryLabelColor] : [UIColor labelColor];
         cell.detailTextLabel.text = nil;
         
         cell.imageView.image = [UIImage systemImageNamed:[self iconForCommand:actionItem]];
-        cell.imageView.tintColor = [self isEndIfActionItem:actionItem] ? [UIColor tertiaryLabelColor] : [UIColor systemGrayColor];
+        cell.imageView.tintColor = isControl ? [UIColor tertiaryLabelColor] : [UIColor systemGrayColor];
         
         UIImageView *handleView = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"line.3.horizontal"]];
         handleView.tintColor = [UIColor systemGray3Color];
