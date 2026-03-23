@@ -1097,14 +1097,14 @@
 
     // Logic to separate "Type" from "Value"
     if ([action hasPrefix:@"exec "]) {
-        cell.textLabel.text = @"Terminal Command";
-        subtitle = [action substringFromIndex:5];
+        cell.textLabel.text = [action substringFromIndex:5];
+        subtitle = @"Terminal Command";
     } else if ([action hasPrefix:@"root "]) {
-        cell.textLabel.text = @"Root Command";
-        subtitle = [action substringFromIndex:5];
+        cell.textLabel.text = [action substringFromIndex:5];
+        subtitle = @"Root Command";
     } else if ([action hasPrefix:@"Lua "] || [action hasPrefix:@"lua "]) {
-        cell.textLabel.text = @"Lua Script";
-        subtitle = [action hasPrefix:@"Lua "] ? [action substringFromIndex:4] : [action substringFromIndex:4];
+        cell.textLabel.text = [action hasPrefix:@"Lua "] ? [action substringFromIndex:4] : [action substringFromIndex:4];
+        subtitle = @"Lua Script";
     } else if ([action hasPrefix:@"delay "]) {
         cell.textLabel.text = [NSString stringWithFormat:@"Wait %@s", [action substringFromIndex:6]];
         subtitle = [NSString stringWithFormat:@"%@ seconds", [action substringFromIndex:6]];
@@ -1143,11 +1143,15 @@
 
         // Use monospace for code-like things
         if ([action hasPrefix:@"exec "] || [action hasPrefix:@"root "] || [action hasPrefix:@"Lua "] || [action hasPrefix:@"lua "]) {
-            cell.detailTextLabel.font = [UIFont monospacedSystemFontOfSize:13 weight:UIFontWeightRegular];
-            cell.detailTextLabel.numberOfLines = 1;
-            cell.detailTextLabel.lineBreakMode = NSLineBreakByTruncatingMiddle;
+            cell.textLabel.font = [UIFont monospacedSystemFontOfSize:15 weight:UIFontWeightRegular];
+            cell.textLabel.numberOfLines = 1;
+            cell.textLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+            
+            cell.detailTextLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightRegular];
+            cell.detailTextLabel.textColor = [UIColor secondaryLabelColor];
         } else {
              cell.detailTextLabel.font = [UIFont systemFontOfSize:15];
+             cell.detailTextLabel.textColor = [UIColor secondaryLabelColor];
         }
     } else {
         cell.detailTextLabel.text = nil;

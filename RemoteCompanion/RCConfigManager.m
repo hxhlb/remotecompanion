@@ -641,10 +641,7 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
     // Final truncation to keep the detail labels from overflowing
     // Use middle truncation: "Start...End"
     if (shouldTruncate && result.length > 40) {
-        NSInteger keep = 18; 
-        NSString *prefix = [result substringToIndex:keep];
-        NSString *suffix = [result substringFromIndex:result.length - keep];
-        result = [NSString stringWithFormat:@"%@...%@", prefix, suffix];
+        result = [[result substringToIndex:37] stringByAppendingString:@"..."];
     }
     
     return result;

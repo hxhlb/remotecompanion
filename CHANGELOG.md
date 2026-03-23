@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.0~beta1] - 2026-03-23
+
+### Fixed
+- **Action UI**: Improved readability of the action sequence list. Terminal commands and Lua scripts now show their actual code in the main label for faster identification.
+- **Truncation Logic**: Switched to tail truncation for long commands, ensuring the most relevant code is visible at a glance.
+
 ## [2.3.0] - 2026-03-04
 
 ### Changed
