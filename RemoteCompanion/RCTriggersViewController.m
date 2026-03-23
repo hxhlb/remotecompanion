@@ -6,6 +6,7 @@
 #import <notify.h>
 #import "RCWiFiTriggerViewController.h"
 #import "RCBluetoothTriggerViewController.h"
+#import "RCAppPickerViewController.h"
 
 #define kSimulateNotificationPrefix "com.pizzaman.rc.simulate."
 
@@ -35,6 +36,7 @@
     if ([triggerKey hasPrefix:@"nfc_"]) return @"wave.3.right.circle.fill";
     if ([triggerKey hasPrefix:@"wifi_"]) return @"wifi";
     if ([triggerKey hasPrefix:@"bt_"]) return @"bolt.horizontal.fill";
+    if ([triggerKey hasPrefix:@"app_launch_"]) return @"app.badge";
     return @"hand.tap"; // Default
 }
 
@@ -229,6 +231,13 @@
     }
     addSection(btKeys, @"Bluetooth Device Triggers", YES);
 
+    // App Launch Section
+    NSMutableArray *appKeys = [NSMutableArray array];
+    for (NSString *key in [[RCConfigManager sharedManager] allConfiguredTriggerKeys]) {
+        if ([key hasPrefix:@"app_launch_"]) [appKeys addObject:key];
+    }
+    addSection(appKeys, @"App Launch Triggers", YES);
+
     self.sections = sections;
     self.sectionTitles = titles;
 
@@ -271,6 +280,29 @@
 
     [alert addAction:[UIAlertAction actionWithTitle:@"Bluetooth Device" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         RCBluetoothTriggerViewController *vc = [[RCBluetoothTriggerViewController alloc] init];
+        [self.navigationController pushViewController:vc animated:YES];
+    }]];
+
+    [alert addAction:[UIAlertAction actionWithTitle:@"App Launch" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        RCAppPickerViewController *vc = [[RCAppPickerViewController alloc] init];
+        vc.onAppSelected = ^(NSString *appName, NSString *bundleId) {
+            NSString *triggerKey = [NSString stringWithFormat:@"app_launch_%@", bundleId];
+            NSString *friendlyName = [NSString stringWithFormat:@"Launch %@", appName];
+            
+            NSDictionary *triggerData = @{
+                @"name": friendlyName,
+                @"enabled": @YES,
+                @"actions": @[]
+            };
+            
+            [[RCConfigManager sharedManager] updateTrigger:triggerKey withData:triggerData];
+            
+            // Redirect to actions view
+            dispatch_async(dispatch_get_main_queue(), ^{
+                RCActionsViewController *actionsVC = [[RCActionsViewController alloc] initWithTriggerKey:triggerKey];
+                [self.navigationController pushViewController:actionsVC animated:YES];
+            });
+        };
         [self.navigationController pushViewController:vc animated:YES];
     }]];
     
@@ -584,8 +616,8 @@
 - (UISwipeActionsConfiguration *)tableView:(UITableView *)tableView trailingSwipeActionsConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSString *triggerKey = _sections[indexPath.section][indexPath.row];
 
-    // Only allow delete for NFC, WiFi, BT triggers
-    if (![triggerKey hasPrefix:@"nfc_"] && ![triggerKey hasPrefix:@"wifi_"] && ![triggerKey hasPrefix:@"bt_"]) {
+    // Only allow delete for NFC, WiFi, BT, App triggers
+    if (![triggerKey hasPrefix:@"nfc_"] && ![triggerKey hasPrefix:@"wifi_"] && ![triggerKey hasPrefix:@"bt_"] && ![triggerKey hasPrefix:@"app_launch_"]) {
         return [UISwipeActionsConfiguration configurationWithActions:@[]];
     }
 
