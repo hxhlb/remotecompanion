@@ -1102,6 +1102,22 @@ static BOOL rc_evaluate_if_condition(NSDictionary *ifAction) {
                [legacyUpper hasPrefix:@"PLAYING"];
     }
     
+    if ([conditionKey isEqualToString:@"front_app"]) {
+        NSString *expectedValue = ifAction[@"expectedValue"] ?: ifAction[@"expected"];
+        if (expectedValue.length == 0) return NO;
+        
+        __block NSString *actualBundleId = nil;
+        void (^getBlock)(void) = ^{
+            SBApplication *frontApp = [(SpringBoard *)[UIApplication sharedApplication] _accessibilityFrontMostApplication];
+            actualBundleId = [frontApp bundleIdentifier];
+        };
+        
+        if ([NSThread isMainThread]) getBlock();
+        else dispatch_sync(dispatch_get_main_queue(), getBlock);
+        
+        return [actualBundleId isEqualToString:expectedValue];
+    }
+    
     NSString *statusCommand = rc_status_command_for_condition_key(conditionKey);
     if (statusCommand.length == 0) return NO;
     

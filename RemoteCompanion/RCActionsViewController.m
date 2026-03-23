@@ -513,6 +513,10 @@
                 @{ @"value": @"PORTRAIT", @"title": @"Portrait" },
                 @{ @"value": @"LANDSCAPE", @"title": @"Landscape" }
             ]
+        },
+        @{
+            @"key": @"front_app",
+            @"title": @"Front Application"
         }
     ];
 }
@@ -535,6 +539,35 @@
 }
 
 - (void)presentIfValuePickerForCondition:(NSDictionary *)condition existingIndex:(NSInteger)index {
+    if ([condition[@"key"] isEqualToString:@"front_app"]) {
+        RCAppPickerViewController *appPicker = [[RCAppPickerViewController alloc] init];
+        __weak typeof(self) weakSelf = self;
+        appPicker.onAppSelected = ^(NSString *name, NSString *bundleId) {
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (!strongSelf) return;
+            
+            NSDictionary *ifAction = @{
+                @"type": @"if",
+                @"conditionKey": @"front_app",
+                @"conditionTitle": @"Front Application",
+                @"expectedValue": bundleId,
+                @"expectedTitle": name
+            };
+            
+            if (index != NSNotFound && index >= 0 && index < (NSInteger)strongSelf.actions.count) {
+                strongSelf.actions[index] = ifAction;
+            } else {
+                [strongSelf.actions addObject:ifAction];
+                [strongSelf.actions addObject:@{ @"type": @"end_if" }];
+            }
+            [strongSelf saveActions];
+            [strongSelf.tableView reloadData];
+            [strongSelf.navigationController popViewControllerAnimated:YES];
+        };
+        [self.navigationController pushViewController:appPicker animated:YES];
+        return;
+    }
+
     NSArray *values = condition[@"values"] ?: @[];
     NSString *title = [NSString stringWithFormat:@"%@ is...", condition[@"title"] ?: @"Condition"];
     UIAlertController *picker = [UIAlertController alertControllerWithTitle:title
