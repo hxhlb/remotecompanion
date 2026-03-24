@@ -402,6 +402,11 @@ extern void BKSTerminateApplicationForReasonAndReportWithDescription(NSString *b
 - (void)setRingerMuted:(BOOL)muted;
 @end
 
+@interface SBMainSwitcherViewController : UIViewController
++ (instancetype)sharedInstance;
+- (void)_toggleSwitcher;
+@end
+
 @interface AVSystemController : NSObject
 + (instancetype)sharedAVSystemController;
 - (BOOL)getVolume:(float *)volume forCategory:(NSString *)category;
@@ -2237,6 +2242,30 @@ static NSString *handle_command(NSString *cmd) {
             }
         });
         return opened ? @"Control Center opened\n" : @"Failed to open Control Center\n";
+    } else if ([cleanCmd isEqualToString:@"switcher"] || [cleanCmd isEqualToString:@"app switcher"]) {
+        __block BOOL success = NO;
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            Class switcherClass = objc_getClass("SBMainSwitcherViewController");
+            if (switcherClass) {
+                id switcher = nil;
+                if ([switcherClass respondsToSelector:@selector(sharedInstance)]) {
+                    switcher = [switcherClass sharedInstance];
+                }
+                if (switcher && [switcher respondsToSelector:@selector(_toggleSwitcher)]) {
+                    [switcher _toggleSwitcher];
+                    success = YES;
+                }
+            }
+            
+            if (!success) {
+                id uiCtrl = [objc_getClass("SBUIController") sharedInstance];
+                if ([uiCtrl respondsToSelector:@selector(_toggleSwitcher)]) {
+                    [uiCtrl performSelector:@selector(_toggleSwitcher)];
+                    success = YES;
+                }
+            }
+        });
+        return success ? @"Switcher toggled\n" : @"Failed to toggle switcher\n";
     } else if ([cleanCmd isEqualToString:@"is-locked"]) {
         // Query lock state
         // Use dispatch_sync to wait for result from main thread

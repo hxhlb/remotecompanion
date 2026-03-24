@@ -579,7 +579,8 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
         @"ldrestart": @"Soft Reboot (ldrestart)",
         @"userspace-reboot": @"Userspace Reboot",
         @"uicache": @"Refresh Icon Cache",
-        @"player status": @"Player Status"
+        @"player status": @"Player Status",
+        @"switcher": @"App Switcher"
     };
     
     NSString *result = names[cmd];
@@ -744,7 +745,8 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
         @"vibration ring-on": @"bell",
         @"vibration ring-off": @"bell",
         @"vibration ring-toggle": @"bell",
-        @"vibration ring-status": @"bell.circle"
+        @"vibration ring-status": @"bell.circle",
+        @"switcher": @"square.stack.3d.up.fill"
     };
     
     return icons[cmd] ?: @"circle.fill";

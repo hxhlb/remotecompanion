@@ -115,6 +115,7 @@
             @{ @"name": @"Do Not Disturb Toggle", @"command": @"dnd toggle", @"icon": @"moon.circle.fill" },
             @{ @"name": @"Activate Siri", @"command": @"siri", @"icon": @"mic.circle.fill" },
             @{ @"name": @"Home Button", @"command": @"home", @"icon": @"house.fill" },
+            @{ @"name": @"App Switcher", @"command": @"switcher", @"icon": @"square.stack.3d.up.fill" },
             @{ @"name": @"Open Control Center", @"command": @"open control center", @"icon": @"switch.2" },
             @{ @"name": @"Respring Device", @"command": @"respring", @"icon": @"memories" },
             @{ @"name": @"Soft Reboot (ldrestart)", @"command": @"ldrestart", @"icon": @"arrow.clockwise" },
