@@ -1,7 +1,6 @@
 #import "RCActionPickerViewController.h"
 #import "RCServerClient.h"
 #import "RCConfigManager.h"
-#import "RCUITweaker.h"
 
 @interface RCActionPickerViewController () <UISearchResultsUpdating>
 @property (nonatomic, strong) NSArray<NSString *> *sectionTitles;
@@ -44,12 +43,6 @@
         initWithBarButtonSystemItem:UIBarButtonSystemItemCancel
         target:self
         action:@selector(cancel)];
-    
-    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc]
-        initWithImage:[UIImage systemImageNamed:@"slider.horizontal.3"]
-        style:UIBarButtonItemStylePlain
-        target:self
-        action:@selector(openUITweaker)];
     
     // Setup Search
     self.searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
@@ -150,23 +143,11 @@
     [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"ActionCell"];
     self.tableView.rowHeight = 60; // Increased touch target
     
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(handleTweaksChanged:)
-                                                 name:@"RCConfigTweaksChangedNotification"
-                                               object:nil];
     [self applyTweaks];
 }
 
 - (void)cancel {
     [self dismissViewControllerAnimated:YES completion:nil];
-}
-
-- (void)openUITweaker {
-    [RCUITweaker show];
-}
-
-- (void)handleTweaksChanged:(NSNotification *)note {
-    [self applyTweaks];
 }
 
 - (void)applyTweaks {
