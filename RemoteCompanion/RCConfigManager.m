@@ -227,6 +227,20 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
     if (triggers[triggerKey]) {
         [triggers removeObjectForKey:triggerKey];
     }
+    
+    // Also clean up from notificationTriggers metadata if it's a notification trigger
+    if ([triggerKey hasPrefix:@"notif_"]) {
+        NSMutableArray *notifTriggers = [[self notificationTriggers] mutableCopy];
+        for (NSInteger i = notifTriggers.count - 1; i >= 0; i--) {
+            NSDictionary *notif = notifTriggers[i];
+            if ([notif[@"key"] isEqualToString:triggerKey]) {
+                [notifTriggers removeObjectAtIndex:i];
+            }
+        }
+        [self setNotificationTriggers:notifTriggers];
+    }
+    
+    [self saveConfig];
 }
 
 - (void)renameTrigger:(NSString *)triggerKey toName:(NSString *)newName {
