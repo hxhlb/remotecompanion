@@ -235,6 +235,13 @@
     }
     addSection(btKeys, @"Bluetooth Device Triggers", YES);
 
+    // Notification Triggers Section
+    NSMutableArray *notifKeys = [NSMutableArray array];
+    for (NSString *key in [[RCConfigManager sharedManager] allConfiguredTriggerKeys]) {
+        if ([key hasPrefix:@"notif_"]) [notifKeys addObject:key];
+    }
+    addSection(notifKeys, @"Notification Triggers", YES);
+
     // App Launch Section
     NSMutableArray *appKeys = [NSMutableArray array];
     for (NSString *key in [[RCConfigManager sharedManager] allConfiguredTriggerKeys]) {
@@ -625,8 +632,8 @@
 - (UISwipeActionsConfiguration *)tableView:(UITableView *)tableView trailingSwipeActionsConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath {
     NSString *triggerKey = _sections[indexPath.section][indexPath.row];
 
-    // Only allow delete for NFC, WiFi, BT, App triggers
-    if (![triggerKey hasPrefix:@"nfc_"] && ![triggerKey hasPrefix:@"wifi_"] && ![triggerKey hasPrefix:@"bt_"] && ![triggerKey hasPrefix:@"app_launch_"]) {
+    // Only allow delete for NFC, WiFi, BT, App, Notif triggers
+    if (![triggerKey hasPrefix:@"nfc_"] && ![triggerKey hasPrefix:@"wifi_"] && ![triggerKey hasPrefix:@"bt_"] && ![triggerKey hasPrefix:@"app_launch_"] && ![triggerKey hasPrefix:@"notif_"]) {
         return [UISwipeActionsConfiguration configurationWithActions:@[]];
     }
 
