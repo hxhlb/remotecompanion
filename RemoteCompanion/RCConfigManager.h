@@ -26,6 +26,8 @@
 - (void)removeTrigger:(NSString *)triggerKey;
 - (void)renameTrigger:(NSString *)triggerKey toName:(NSString *)newName;
 - (NSArray<NSString *> *)nfcTriggerKeys;
+- (NSArray<NSDictionary *> *)notificationTriggers;
+- (void)setNotificationTriggers:(NSArray<NSDictionary *> *)triggers;
 - (void)saveConfig;
 - (void)stopBackgroundNFC;
 

@@ -7,6 +7,7 @@
 #import "RCWiFiTriggerViewController.h"
 #import "RCBluetoothTriggerViewController.h"
 #import "RCAppPickerViewController.h"
+#import "RCNotificationTriggerViewController.h"
 
 #define kSimulateNotificationPrefix "com.pizzaman.rc.simulate."
 
@@ -37,6 +38,7 @@
     if ([triggerKey hasPrefix:@"wifi_"]) return @"wifi";
     if ([triggerKey hasPrefix:@"bt_"]) return @"bolt.horizontal.fill";
     if ([triggerKey hasPrefix:@"app_launch_"]) return @"app.badge";
+    if ([triggerKey hasPrefix:@"notif_"]) return @"bell.badge.fill";
     if ([triggerKey isEqualToString:@"shake"]) return @"waveform.path.ecg";
     return @"hand.tap"; // Default
 }
@@ -305,6 +307,11 @@
                 [self.navigationController pushViewController:actionsVC animated:YES];
             });
         };
+        [self.navigationController pushViewController:vc animated:YES];
+    }]];
+
+    [alert addAction:[UIAlertAction actionWithTitle:@"Notification" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        RCNotificationTriggerViewController *vc = [[RCNotificationTriggerViewController alloc] init];
         [self.navigationController pushViewController:vc animated:YES];
     }]];
     
