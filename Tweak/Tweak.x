@@ -93,6 +93,21 @@ static NSHashTable *siriInteractions = nil;
 - (void)presentAnimated:(BOOL)animated completion:(id)completion;
 @end
 
+@interface NCNotificationContent : NSObject
+@property (nonatomic, copy, readonly) NSString *title;
+@property (nonatomic, copy, readonly) NSString *subtitle;
+@property (nonatomic, copy, readonly) NSString *message;
+@end
+
+@interface NCNotificationRequest : NSObject
+@property (nonatomic, copy, readonly) NSString *sectionIdentifier;
+@property (nonatomic, strong, readonly) NCNotificationContent *content;
+@end
+
+@interface NCNotificationDispatcher : NSObject
+- (void)postNotificationRequest:(id)arg1 forDestination:(id)arg2;
+@end
+
 %hook SBVoiceControlController
 - (id)init {
     id r = %orig;
@@ -5319,3 +5334,39 @@ static void update_edge_gestures() {
         SRLog(@"Tweak Loaded in %@ - Skipping Full Initialization (Choicy Visibility Only)", bundleID);
     }
 }
+%hook NCNotificationDispatcher
+- (void)postNotificationRequest:(NCNotificationRequest *)request forDestination:(id)destination {
+    %orig;
+
+    if (!request || ![request isKindOfClass:objc_getClass("NCNotificationRequest")]) return;
+    if (!g_triggerConfig) return;
+    
+    NSString *bundleId = request.sectionIdentifier;
+    NCNotificationContent *content = request.content;
+    NSString *title = content.title ?: @"";
+    NSString *subtitle = content.subtitle ?: @"";
+    NSString *message = content.message ?: @"";
+    
+    NSArray *triggers = g_triggerConfig[@"notificationTriggers"];
+    for (NSDictionary *trigger in triggers) {
+        if (![trigger[@"enabled"] boolValue]) continue;
+        
+        NSString *matchBundleId = trigger[@"bundleId"];
+        if (matchBundleId && matchBundleId.length > 0 && ![matchBundleId isEqualToString:bundleId]) continue;
+        
+        NSString *textMatch = trigger[@"textMatch"];
+        if (textMatch && textMatch.length > 0) {
+            BOOL found = ([title rangeOfString:textMatch options:NSCaseInsensitiveSearch].location != NSNotFound) ||
+                         ([subtitle rangeOfString:textMatch options:NSCaseInsensitiveSearch].location != NSNotFound) ||
+                         ([message rangeOfString:textMatch options:NSCaseInsensitiveSearch].location != NSNotFound);
+            if (!found) continue;
+        }
+        
+        NSString *triggerKey = trigger[@"triggerKey"];
+        if (triggerKey) {
+            SRLog(@"[RCNotif] Triggering %@ for notification from %@", triggerKey, bundleId);
+            RCExecuteTrigger(triggerKey);
+        }
+    }
+}
+%end
