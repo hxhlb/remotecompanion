@@ -1,11 +1,12 @@
 #import "RCNotificationTriggerViewController.h"
 #import "RCConfigManager.h"
 #import "RCActionsViewController.h"
+#import "RCAppPickerViewController.h"
 
 @interface RCNotificationTriggerViewController () <UITextFieldDelegate>
-@property (nonatomic, strong) UITextField *bundleIdField;
 @property (nonatomic, strong) UITextField *textMatchField;
-@property (nonatomic, strong) UITextField *nameField;
+@property (nonatomic, copy) NSString *selectedBundleId;
+@property (nonatomic, copy) NSString *selectedAppName;
 @end
 
 @implementation RCNotificationTriggerViewController
@@ -17,6 +18,9 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = @"Notification Trigger";
+    
+    self.selectedAppName = @"Any App"; // Default
+    self.selectedBundleId = @"";
     
     [[NSNotificationCenter defaultCenter] addObserver:self 
                                              selector:@selector(applyTweaks) 
@@ -41,7 +45,7 @@
 #pragma mark - Table View Data Source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return 3;
+    return 2;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -49,53 +53,109 @@
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
-    if (section == 0) return @"App Bundle Identifier (e.g. com.apple.MobileSMS)";
+    if (section == 0) return @"Target App";
     if (section == 1) return @"Text Match (Optional)";
-    return @"Trigger Name";
+    return nil;
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForFooterInSection:(NSInteger)section {
-    if (section == 0) return @"Leave empty to match notifications from ALL apps.";
+    if (section == 0) return @"Choose which app's notifications to listen for, or leave as 'Any App' to match all incoming notifications.";
     if (section == 1) return @"Matches text in the title, subtitle, or body (case-insensitive).";
     return nil;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
-    cell.selectionStyle = UITableViewCellSelectionStyleNone;
-    
-    UITextField *field = [[UITextField alloc] initWithFrame:CGRectMake(20, 0, tableView.bounds.size.width - 40, 44)];
-    field.delegate = self;
-    field.autocorrectionType = UITextAutocorrectionTypeNo;
-    field.autocapitalizationType = UITextAutocapitalizationTypeNone;
-    field.clearButtonMode = UITextFieldViewModeWhileEditing;
+    UITableViewCell *cell;
     
     if (indexPath.section == 0) {
-        field.placeholder = @"com.apple.MobileSMS";
-        self.bundleIdField = field;
-    } else if (indexPath.section == 1) {
-        field.placeholder = @"Keyword to match";
-        self.textMatchField = field;
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:@"AppCell"];
+        cell.textLabel.text = @"App";
+        cell.detailTextLabel.text = self.selectedAppName;
+        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     } else {
-        field.placeholder = @"My Trigger Name";
-        field.autocapitalizationType = UITextAutocapitalizationTypeWords;
-        self.nameField = field;
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"TextCell"];
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+        
+        if (!self.textMatchField) {
+            UITextField *field = [[UITextField alloc] initWithFrame:CGRectMake(20, 0, tableView.bounds.size.width - 40, 44)];
+            field.delegate = self;
+            field.autocorrectionType = UITextAutocorrectionTypeNo;
+            field.autocapitalizationType = UITextAutocapitalizationTypeNone;
+            field.clearButtonMode = UITextFieldViewModeWhileEditing;
+            field.placeholder = @"Keyword to match";
+            self.textMatchField = field;
+        }
+        
+        // Ensure field fits appropriately
+        self.textMatchField.frame = CGRectMake(16, 0, cell.contentView.bounds.size.width - 32, 44);
+        self.textMatchField.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        
+        if (!self.textMatchField.superview) {
+            [cell.contentView addSubview:self.textMatchField];
+        }
     }
     
-    [cell.contentView addSubview:field];
     return cell;
 }
 
-- (void)saveTrigger {
-    NSString *bundleId = [self.bundleIdField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    NSString *textMatch = [self.textMatchField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    NSString *name = [self.nameField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
-    if (name.length == 0) {
-        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Name Required" message:@"Please enter a name for this trigger." preferredStyle:UIAlertControllerStyleAlert];
-        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
-        [self presentViewController:alert animated:YES completion:nil];
-        return;
+    if (indexPath.section == 0) {
+        RCAppPickerViewController *picker = [[RCAppPickerViewController alloc] init];
+        
+        // Add "Any App" as a custom selection option?
+        // Since the user can't clear a selection easily if RCAppPickerViewController only lists apps,
+        // we might want a way to reset to "Any App". Let's handle it by adding a custom app row or just 
+        // using the standard behavior of the app picker. RCAppPickerViewController doesn't support "Any App".
+        // Let's add an option inside RCAppPickerViewController or handle it gracefully.
+        // Actually, we can add a way to clear it in a separate button, or just pass a completion block.
+        
+        __weak typeof(self) weakSelf = self;
+        picker.onAppSelected = ^(NSString *name, NSString *bundleId) {
+            weakSelf.selectedAppName = name;
+            weakSelf.selectedBundleId = bundleId;
+            [weakSelf.tableView reloadRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:0 inSection:0]] withRowAnimation:UITableViewRowAnimationAutomatic];
+        };
+        
+        [self.navigationController pushViewController:picker animated:YES];
+    }
+}
+
+// Add a context menu or trailing swipe to easy clear "Any App"?
+// Let's add a trailing swipe action to clear the selected app back to "Any App"
+- (UISwipeActionsConfiguration *)tableView:(UITableView *)tableView trailingSwipeActionsConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (indexPath.section == 0) {
+        UIContextualAction *clearAction = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleDestructive title:@"Clear" handler:^(UIContextualAction *action, UIView *sourceView, void (^completionHandler)(BOOL)) {
+            self.selectedAppName = @"Any App";
+            self.selectedBundleId = @"";
+            [self.tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+            completionHandler(YES);
+        }];
+        clearAction.backgroundColor = [UIColor systemGrayColor];
+        
+        return [UISwipeActionsConfiguration configurationWithActions:@[clearAction]];
+    }
+    return nil;
+}
+
+- (void)saveTrigger {
+    NSString *bundleId = [self.selectedBundleId stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *textMatch = [self.textMatchField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    
+    NSString *name;
+    if (bundleId.length > 0) {
+        if (textMatch.length > 0) {
+            name = [NSString stringWithFormat:@"Notification from %@ containing '%@'", self.selectedAppName, textMatch];
+        } else {
+            name = [NSString stringWithFormat:@"Any Notification from %@", self.selectedAppName];
+        }
+    } else {
+        if (textMatch.length > 0) {
+            name = [NSString stringWithFormat:@"Any Notification containing '%@'", textMatch];
+        } else {
+            name = @"Any Notification";
+        }
     }
     
     RCConfigManager *config = [RCConfigManager sharedManager];
