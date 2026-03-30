@@ -5334,18 +5334,16 @@ static void update_edge_gestures() {
         SRLog(@"Tweak Loaded in %@ - Skipping Full Initialization (Choicy Visibility Only)", bundleID);
     }
 }
-%hook NCNotificationDispatcher
-- (void)postNotificationRequest:(NCNotificationRequest *)request forDestination:(id)destination {
+%hook BBServer
+- (void)publishBulletin:(id)bulletin destinations:(NSUInteger)destinations {
     %orig;
-
-    if (!request || ![request isKindOfClass:objc_getClass("NCNotificationRequest")]) return;
+    if (!bulletin) return;
     if (!g_triggerConfig) return;
     
-    NSString *bundleId = request.sectionIdentifier;
-    NCNotificationContent *content = request.content;
-    NSString *title = content.title ?: @"";
-    NSString *subtitle = content.subtitle ?: @"";
-    NSString *message = content.message ?: @"";
+    NSString *bundleId = [bulletin performSelector:@selector(sectionID)];
+    NSString *title = [bulletin performSelector:@selector(title)] ?: @"";
+    NSString *subtitle = [bulletin performSelector:@selector(subtitle)] ?: @"";
+    NSString *message = [bulletin performSelector:@selector(message)] ?: @"";
     
     NSArray *triggers = g_triggerConfig[@"notificationTriggers"];
     for (NSDictionary *trigger in triggers) {
