@@ -76,7 +76,7 @@
       font-weight: 700;
       letter-spacing: -0.02em;
       color: #fff;
-      padding: 4px 16px 12px;
+      padding: 10px 16px 12px;
       margin: 0;
     }
 
@@ -795,7 +795,6 @@ function nameForKey(key) {
   return key;
 }
 
-// ── Command naming ────────────────────────────────────────────────────────────
 const CMD_NAMES = {
   'play':'Play','pause':'Pause','playpause':'Play/Pause','next':'Next Track','prev':'Previous Track',
   'volume up':'Volume Up','volume down':'Volume Down',
@@ -808,13 +807,16 @@ const CMD_NAMES = {
   'lock':'Lock Device','unlock':'Unlock Device',
   'dnd on':'Do Not Disturb On','dnd off':'Do Not Disturb Off','dnd toggle':'Do Not Disturb Toggle',
   'respring':'Respring','siri':'Activate Siri','home':'Home Button','switcher':'App Switcher',
-  'open control center':'Open Control Center',
+  'open control center':'Control Center',
   'ldrestart':'Soft Reboot','userspace-reboot':'Userspace Reboot','uicache':'Refresh Icon Cache',
   'low power on':'Low Power On','low power off':'Low Power Off','low power toggle':'Low Power Toggle',
   'anc on':'Noise Cancellation On','anc off':'Noise Cancellation Off','anc transparency':'Transparency Mode',
   'airplay disconnect':'Disconnect AirPlay',
   'vibration silent-toggle':'Silent Vibrate Toggle','vibration ring-toggle':'Ring Vibrate Toggle',
   'mute toggle':'Mute Toggle',
+  'haptic':'Haptic Feedback',
+  'trigger_bottombar_swipe_left':'Bottom Bar Swipe Left',
+  'trigger_bottombar_swipe_right':'Bottom Bar Swipe Right',
 };
 
 function nameForCmd(cmd) {
@@ -827,17 +829,21 @@ function nameForCmd(cmd) {
     if (t === 'repeat') return `Repeat ${cmd.count||''}`;
     return 'Block';
   }
-  if (CMD_NAMES[cmd]) return CMD_NAMES[cmd];
-  if (cmd.startsWith('delay '))      return `Delay ${cmd.slice(6)}s`;
-  if (cmd.startsWith('exec '))       return cmd.slice(5);
-  if (cmd.startsWith('root '))       return `[root] ${cmd.slice(5)}`;
-  if (cmd.startsWith('bt connect ')) return `Connect ${cmd.slice(11)}`;
-  if (cmd.startsWith('bt disconnect ')) return `Disconnect ${cmd.slice(14)}`;
-  if (cmd.startsWith('set-vol '))    return `Set Volume ${cmd.slice(8)}%`;
-  if (cmd.startsWith('brightness ')) return `Set Brightness ${cmd.slice(11)}%`;
-  if (cmd.startsWith('shortcut:'))   return `Shortcut: ${cmd.slice(9)}`;
-  if (cmd.startsWith('uiopen '))     return `Open: ${cmd.slice(7)}`;
-  return cmd;
+  const lowCmd = cmd.toLowerCase();
+  if (CMD_NAMES[lowCmd]) return CMD_NAMES[lowCmd];
+  if (lowCmd.startsWith('flashlight ')) return `Flashlight ${cmd.slice(11)}%`;
+  if (lowCmd.startsWith('lua:'))          return `Lua: ${cmd.slice(4)}`;
+  if (lowCmd.startsWith('delay '))        return `Delay ${cmd.slice(6)}s`;
+  if (lowCmd.startsWith('exec '))         return `Terminal: ${cmd.slice(5)}`;
+  if (lowCmd.startsWith('root '))         return `[root] ${cmd.slice(5)}`;
+  if (lowCmd.startsWith('bt connect '))   return `Connect ${cmd.slice(11)}`;
+  if (lowCmd.startsWith('bt disconnect ')) return `Disconnect ${cmd.slice(14)}`;
+  if (lowCmd.startsWith('set-vol '))      return `Set Volume ${cmd.slice(8)}%`;
+  if (lowCmd.startsWith('brightness '))   return `Set Brightness ${cmd.slice(11)}%`;
+  if (lowCmd.startsWith('shortcut:'))     return `Shortcut: ${cmd.slice(9)}`;
+  if (lowCmd.startsWith('uiopen '))       return `Open: ${cmd.slice(7)}`;
+  // Fallback: capitalize first letter
+  return cmd.charAt(0).toUpperCase() + cmd.slice(1);
 }
 
 function iconForCmd(cmd) {
@@ -863,14 +869,18 @@ function iconForCmd(cmd) {
     'low power on':'battery_25','low power off':'battery_100',
     'screenshot':'camera_fill','haptic':'hand_tap_fill',
   };
-  if (map[cmd]) return { icon:map[cmd], cls:'icon-dark' };
-  if (cmd.startsWith('delay '))      return { icon:'timer',             cls:'icon-orange' };
-  if (cmd.startsWith('bt connect ')) return { icon:'link',              cls:'icon-indigo' };
-  if (cmd.startsWith('set-vol '))    return { icon:'speaker_3_fill',    cls:'icon-blue' };
-  if (cmd.startsWith('brightness ')) return { icon:'sun_max_fill',      cls:'icon-yellow' };
-  if (cmd.startsWith('shortcut:'))   return { icon:'command',           cls:'icon-indigo' };
-  if (cmd.startsWith('uiopen '))     return { icon:'app_badge_fill',    cls:'icon-pink' };
-  if (cmd.startsWith('exec ') || cmd.startsWith('root ')) return { icon:'terminal_fill', cls:'icon-dark' };
+  const lowCmd = cmd.toLowerCase();
+  if (map[lowCmd]) return { icon:map[lowCmd], cls:'icon-dark' };
+  if (lowCmd.startsWith('flashlight ')) return { icon:'flashlight_on_fill', cls:'icon-orange' };
+  if (lowCmd.startsWith('lua:'))          return { icon:'scroll_fill',       cls:'icon-purple' };
+  if (lowCmd.startsWith('delay '))        return { icon:'timer',             cls:'icon-orange' };
+  if (lowCmd.startsWith('bt connect '))   return { icon:'link',              cls:'icon-indigo' };
+  if (lowCmd.startsWith('set-vol '))      return { icon:'speaker_3_fill',    cls:'icon-blue' };
+  if (lowCmd.startsWith('brightness '))   return { icon:'sun_max_fill',      cls:'icon-yellow' };
+  if (lowCmd.startsWith('shortcut:'))     return { icon:'command',           cls:'icon-indigo' };
+  if (lowCmd.startsWith('uiopen '))       return { icon:'app_badge_fill',    cls:'icon-pink' };
+  if (lowCmd.startsWith('exec ') || lowCmd.startsWith('root ')) return { icon:'terminal_fill', cls:'icon-dark' };
+  if (lowCmd.startsWith('trigger_bottombar')) return { icon:'pip_fill',      cls:'icon-gray' };
   return { icon:'bolt_fill', cls:'icon-dark' };
 }
 
