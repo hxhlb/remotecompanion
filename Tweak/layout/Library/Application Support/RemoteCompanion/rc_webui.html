@@ -104,9 +104,8 @@
     /* ── Trigger row ── */
     .trigger-row {
       display: flex;
-      align-items: center;
+      align-items: stretch;
       min-height: 54px;
-      border-bottom: 0.5px solid rgba(255,255,255,0.08);
       overflow: hidden;
       position: relative;
       cursor: pointer;
@@ -114,6 +113,19 @@
     }
     .trigger-row:last-child { border-bottom: none; }
     .trigger-row:active { background: rgba(255,255,255,0.05); }
+
+    /* Separator line for triggers */
+    .trigger-row-inner::after {
+      content: '';
+      position: absolute;
+      left: 60px; /* Offset to start after icon */
+      right: 0;
+      bottom: 0;
+      height: 0.5px;
+      background: rgba(255,255,255,0.12);
+      z-index: 3;
+    }
+    .trigger-row:last-child .trigger-row-inner::after { display: none; }
 
     /* Swipe container */
     .trigger-row-inner {
@@ -281,14 +293,24 @@
     }
     /* ── Action sequence rows ── */
     .action-seq-row {
-      display: flex; align-items: center;
+      display: flex; align-items: stretch;
       min-height: 50px;
-      border-bottom: 0.5px solid rgba(255,255,255,0.08);
       overflow: hidden; position: relative;
-      background: #000; /* Darker background to separate from inner */
+      background: #000;
       transition: background 0.15s;
     }
-    .action-seq-row:last-child { border-bottom: none; }
+    /* Separator line for actions */
+    .action-seq-inner::after {
+      content: '';
+      position: absolute;
+      left: 54px; /* Offset for action icon */
+      right: 0;
+      bottom: 0;
+      height: 0.5px;
+      background: rgba(255,255,255,0.12);
+      z-index: 3;
+    }
+    .action-seq-row:last-child .action-seq-inner::after { display: none; }
     
     .action-seq-inner {
       display: flex; align-items: center;
