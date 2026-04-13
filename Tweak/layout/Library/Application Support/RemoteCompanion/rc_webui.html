@@ -293,21 +293,22 @@
       min-height: 50px;
       border-bottom: 0.5px solid rgba(255,255,255,0.08);
       overflow: hidden; position: relative;
-      background: #1c1c1e;
+      background: #000; /* Darker background to separate from inner */
       transition: background 0.15s;
     }
     .action-seq-row:last-child { border-bottom: none; }
-    /* The sliding content */
+    
     .action-seq-inner {
       display: flex; align-items: center;
       flex: 1; min-width: 0;
       padding: 10px 12px 10px 16px;
+      will-change: transform;
       transform: translateX(0);
-      transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
+      transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
       position: relative; z-index: 2;
-      background: #1c1c1e;
+      background: #1c1c1e; /* Row color */
     }
-    /* Behind-the-row delete button */
+    
     .action-del-btn {
       position: absolute; right: 0; top: 0; bottom: 0;
       width: 75px; background: #ff3b30;
@@ -315,7 +316,8 @@
       z-index: 1; cursor: pointer;
     }
     .action-del-btn i { color: #fff; font-size: 20px; pointer-events: none; }
-    /* Opened state */
+
+    /* Open state handle in CSS as fallback */
     .action-seq-row.del-open .action-seq-inner { transform: translateX(-75px); }
 
     /* UNCHANGED for picker/settings rows */
@@ -1272,15 +1274,21 @@ function renderActionList() {
     }
     function onEnd() {
       if (!startedSwipe) { currentlyTracking = false; return; }
-      inner.style.transition = '';
-      inner.style.transform = '';
+      inner.style.transition = ''; // Restore transition
       const isOpen = row.classList.contains('del-open');
+      
+      // Determine final state based on move distance
       if (!isOpen && dx < -30) {
         row.classList.add('del-open');
+        inner.style.transform = 'translateX(-75px)';
         _openActionRow = row;
-      } else {
+      } else if (isOpen && dx > 30) {
         row.classList.remove('del-open');
-        if (_openActionRow === row) _openActionRow = null;
+        inner.style.transform = 'translateX(0)';
+        _openActionRow = null;
+      } else {
+        // Snap back to current state
+        inner.style.transform = isOpen ? 'translateX(-75px)' : 'translateX(0)';
       }
       currentlyTracking = false;
     }
