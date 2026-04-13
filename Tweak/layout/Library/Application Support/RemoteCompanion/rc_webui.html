@@ -764,8 +764,8 @@ const TRIGGER_ICONS = {
   trigger_edge_left_swipe_down: { icon:'arrow_down_to_line', cls:'icon-gray' },
   trigger_edge_right_swipe_up:  { icon:'arrow_up_to_line',   cls:'icon-gray' },
   trigger_edge_right_swipe_down:{ icon:'arrow_down_to_line', cls:'icon-gray' },
-  trigger_bottombar_swipe_left: { icon:'pip_fill', cls:'icon-gray' },
-  trigger_bottombar_swipe_right:{ icon:'pip_fill', cls:'icon-gray' },
+  trigger_bottombar_swipe_left: { icon:'square_stack_3d_up_fill', cls:'icon-gray' },
+  trigger_bottombar_swipe_right:{ icon:'square_stack_3d_up_fill', cls:'icon-gray' },
   trigger_ringer_mute:   { icon:'bell_slash_fill', cls:'icon-red' },
   trigger_ringer_unmute: { icon:'bell_fill',       cls:'icon-green' },
   trigger_ringer_toggle: { icon:'bell_badge_fill', cls:'icon-orange' },
@@ -858,29 +858,29 @@ function iconForCmd(cmd) {
     'play':'play_fill','pause':'pause_fill','playpause':'playpause_fill',
     'next':'forward_fill','prev':'backward_fill',
     'volume up':'speaker_3_fill','volume down':'speaker_1_fill',
-    'flashlight':'flashlight_on_fill','flashlight on':'flashlight_on_fill','flashlight off':'flashlight_off_fill','flashlight toggle':'flashlight_on_fill',
+    'flashlight':'bolt_fill','flashlight on':'bolt_fill','flashlight off':'bolt_slash_fill','flashlight toggle':'bolt_fill',
     'wifi on':'wifi','wifi off':'wifi_slash','wifi toggle':'wifi',
     'bluetooth on':'bolt_horizontal_fill','bluetooth off':'bolt_horizontal','bluetooth toggle':'bolt_horizontal_fill',
     'airplane on':'airplane','airplane off':'airplane','airplane toggle':'airplane',
     'lock':'lock_fill','unlock':'lock_open_fill',
     'dnd on':'moon_fill','dnd off':'moon','dnd toggle':'moon_circle_fill',
-    'respring':'memories','siri':'mic_circle_fill','home':'house_fill',
-    'open control center':'switch_2',
+    'respring':'arrow_2_circlepath','siri':'mic_fill','home':'house_fill',
+    'open control center':'gear',
     'low power on':'battery_25','low power off':'battery_100',
-    'screenshot':'camera_fill','haptic':'hand_tap_fill',
+    'screenshot':'camera_fill','haptic':'hand_raised_fill',
   };
   const lowCmd = cmd.toLowerCase();
   if (map[lowCmd]) return { icon:map[lowCmd], cls:'icon-dark' };
-  if (lowCmd.startsWith('flashlight ')) return { icon:'flashlight_on_fill', cls:'icon-orange' };
-  if (lowCmd.startsWith('lua:'))          return { icon:'scroll_fill',       cls:'icon-purple' };
-  if (lowCmd.startsWith('delay '))        return { icon:'timer',             cls:'icon-orange' };
-  if (lowCmd.startsWith('bt connect '))   return { icon:'link',              cls:'icon-indigo' };
-  if (lowCmd.startsWith('set-vol '))      return { icon:'speaker_3_fill',    cls:'icon-blue' };
-  if (lowCmd.startsWith('brightness '))   return { icon:'sun_max_fill',      cls:'icon-yellow' };
-  if (lowCmd.startsWith('shortcut:'))     return { icon:'command',           cls:'icon-indigo' };
-  if (lowCmd.startsWith('uiopen '))       return { icon:'app_badge_fill',    cls:'icon-pink' };
-  if (lowCmd.startsWith('exec ') || lowCmd.startsWith('root ')) return { icon:'terminal_fill', cls:'icon-dark' };
-  if (lowCmd.startsWith('trigger_bottombar')) return { icon:'pip_fill',      cls:'icon-gray' };
+  if (lowCmd.startsWith('flashlight ')) return { icon:'bolt_fill',       cls:'icon-orange' };
+  if (lowCmd.startsWith('lua:'))          return { icon:'command',         cls:'icon-purple' };
+  if (lowCmd.startsWith('delay '))        return { icon:'timer',           cls:'icon-orange' };
+  if (lowCmd.startsWith('bt connect '))   return { icon:'link',            cls:'icon-indigo' };
+  if (lowCmd.startsWith('set-vol '))      return { icon:'speaker_3_fill',  cls:'icon-blue' };
+  if (lowCmd.startsWith('brightness '))   return { icon:'sun_max_fill',    cls:'icon-yellow' };
+  if (lowCmd.startsWith('shortcut:'))     return { icon:'command',         cls:'icon-indigo' };
+  if (lowCmd.startsWith('uiopen '))       return { icon:'app_badge_fill',  cls:'icon-pink' };
+  if (lowCmd.startsWith('exec ') || lowCmd.startsWith('root ')) return { icon:'command', cls:'icon-dark' };
+  if (lowCmd.startsWith('trigger_bottombar')) return { icon:'square_stack_3d_up_fill', cls:'icon-gray' };
   return { icon:'bolt_fill', cls:'icon-dark' };
 }
 
