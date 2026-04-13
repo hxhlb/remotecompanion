@@ -287,6 +287,38 @@
       background: #1c1c1e; border-radius: 12px;
       overflow: hidden; border: 0.5px solid rgba(255,255,255,0.08);
     }
+    /* ── Action sequence rows ── */
+    .action-seq-row {
+      display: flex; align-items: center;
+      min-height: 50px;
+      border-bottom: 0.5px solid rgba(255,255,255,0.08);
+      overflow: hidden; position: relative;
+      background: #1c1c1e;
+      transition: background 0.15s;
+    }
+    .action-seq-row:last-child { border-bottom: none; }
+    /* The sliding content */
+    .action-seq-inner {
+      display: flex; align-items: center;
+      flex: 1; min-width: 0;
+      padding: 10px 12px 10px 16px;
+      transform: translateX(0);
+      transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
+      position: relative; z-index: 2;
+      background: #1c1c1e;
+    }
+    /* Behind-the-row delete button */
+    .action-del-btn {
+      position: absolute; right: 0; top: 0; bottom: 0;
+      width: 75px; background: #ff3b30;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1; cursor: pointer;
+    }
+    .action-del-btn i { color: #fff; font-size: 20px; pointer-events: none; }
+    /* Opened state */
+    .action-seq-row.del-open .action-seq-inner { transform: translateX(-75px); }
+
+    /* UNCHANGED for picker/settings rows */
     .action-list-row {
       display: flex; align-items: center;
       min-height: 50px;
@@ -1126,9 +1158,13 @@ function deleteTrigger(key) {
 
 async function runTrigger(key) {
   try {
-    const res = await fetch(`/api/trigger/${encodeURIComponent(key)}`);
-    showToast(res.ok ? '▶ Triggered' : '⚠ Server Error');
-  } catch(e) { showToast('⚠ Could not connect'); }
+    const res = await fetch(`/api/trigger/${encodeURIComponent(key)}`, { method: 'POST' });
+    if (res.status === 403) {
+      showToast('⚠ Enable Web UI in Settings first');
+    } else {
+      showToast(res.ok ? '▶ Triggered' : '⚠ Server Error');
+    }
+  } catch(e) { showToast('⚠ Could not connect to device'); }
 }
 
 // ── Actions panel ─────────────────────────────────────────────────────────────
@@ -1157,8 +1193,14 @@ function playCurrentTrigger() {
   if (currentKey) runTrigger(currentKey);
 }
 
-// ── renderActionList — draws the action sequence without any external library
-let actionSwipeOpen = null;
+// ── renderActionList ─────────────────────────────────────────────────────────
+let _openActionRow = null;
+
+function closeOpenActionRow() {
+  if (!_openActionRow) return;
+  _openActionRow.classList.remove('del-open');
+  _openActionRow = null;
+}
 
 function renderActionList() {
   const card = document.getElementById('action-list-card');
@@ -1166,69 +1208,96 @@ function renderActionList() {
   const actions = triggerData(currentKey).actions || [];
 
   if (actions.length === 0) {
-    card.innerHTML = `<div style="padding:20px 16px;color:#636366;font-size:15px;font-style:italic">No actions — tap Add Action below</div>`;
+    card.innerHTML = `<div style="padding:20px 16px;color:#636366;font-size:15px;font-style:italic">No actions — tap "+ Add Action" below</div>`;
     return;
   }
 
   let indent = 0;
   actions.forEach((action, idx) => {
     const isCtrl = typeof action === 'object';
-    const type = isCtrl ? (action.type||'').toLowerCase() : null;
+    const type   = isCtrl ? (action.type||'').toLowerCase() : null;
     const isEnd  = type === 'end_if' || type === 'end';
     const isElse = type === 'else';
     const isIf   = type === 'if';
-
     const rowIndent = (isEnd || isElse) ? Math.max(0, indent - 1) : indent;
     const { icon, cls } = iconForCmd(action);
 
+    // Outer wrapper
     const row = document.createElement('div');
-    row.className = 'action-list-row';
-    row.style.paddingLeft = `${16 + rowIndent * 20}px`;
-    row.style.borderBottom = '0.5px solid rgba(255,255,255,0.08)';
-    if (idx === actions.length - 1) row.style.borderBottom = 'none';
+    row.className = 'action-seq-row';
 
-    row.innerHTML = `
-      <div class="action-row-icon ${cls}" style="width:24px;height:24px;border-radius:6px;margin-right:12px">
+    // Delete button (behind the row)
+    const delBtn = document.createElement('div');
+    delBtn.className = 'action-del-btn';
+    delBtn.innerHTML = `<i class="f7-icons">trash_fill</i>`;
+    delBtn.addEventListener('click', e => { e.stopPropagation(); removeAction(idx); });
+    row.appendChild(delBtn);
+
+    // Sliding inner content
+    const inner = document.createElement('div');
+    inner.className = 'action-seq-inner';
+    inner.style.paddingLeft = `${16 + rowIndent * 20}px`;
+    inner.innerHTML = `
+      <div class="action-row-icon ${cls}" style="width:24px;height:24px;border-radius:6px;margin-right:14px;flex-shrink:0">
         <i class="f7-icons" style="font-size:13px">${icon}</i>
       </div>
-      <div class="action-row-text">${escHtml(nameForCmd(action))}</div>
-      <i class="f7-icons action-row-handle">bars</i>
+      <div style="flex:1;min-width:0;font-size:16px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(nameForCmd(action))}</div>
+      <i class="f7-icons" style="color:#3a3a3c;font-size:18px;flex-shrink:0;margin-left:8px">bars</i>
     `;
+    row.appendChild(inner);
 
-    // Swipe-to-delete on action rows
-    let aStartX = 0, aDx = 0, aDidSwipe = false, aDidMove = false;
-    const deleteBtn = document.createElement('div');
-    deleteBtn.style.cssText = 'position:absolute;right:0;top:0;bottom:0;width:0;background:#ff3b30;display:flex;align-items:center;justify-content:center;overflow:hidden;transition:width 0.2s;cursor:pointer;';
-    deleteBtn.innerHTML = `<i class="f7-icons" style="color:#fff;font-size:18px">trash_fill</i>`;
-    deleteBtn.addEventListener('click', e => { e.stopPropagation(); removeAction(idx); });
-    row.style.position = 'relative';
-    row.style.overflow = 'hidden';
-    row.appendChild(deleteBtn);
+    // ── Unified swipe (touch + mouse) ────────────────────
+    let startX, startY, dx, startedSwipe, currentlyTracking;
 
-    row.addEventListener('touchstart', e => {
-      if (actionSwipeOpen && actionSwipeOpen !== deleteBtn) {
-        actionSwipeOpen.style.width = '0';
-        actionSwipeOpen = null;
+    function onStart(clientX, clientY) {
+      if (_openActionRow && _openActionRow !== row) closeOpenActionRow();
+      startX = clientX; startY = clientY; dx = 0;
+      startedSwipe = false; currentlyTracking = true;
+    }
+    function onMove(clientX, clientY, preventDefault) {
+      if (!currentlyTracking) return;
+      dx = clientX - startX;
+      const dy = clientY - startY;
+      if (!startedSwipe) {
+        if (Math.abs(dy) > Math.abs(dx)) { currentlyTracking = false; return; }
+        if (Math.abs(dx) > 5) startedSwipe = true;
       }
-      aStartX = e.touches[0].clientX; aDx = 0; aDidSwipe = false; aDidMove = false;
-    }, { passive: true });
-    row.addEventListener('touchmove', e => {
-      aDx = e.touches[0].clientX - aStartX;
-      if (!aDidMove && Math.abs(aDx) > 5) { aDidSwipe = true; }
-      aDidMove = true;
-      if (!aDidSwipe || aDx > 0) return;
-      e.preventDefault();
-      deleteBtn.style.width = `${Math.min(80, Math.abs(aDx))}px`;
-    }, { passive: false });
-    row.addEventListener('touchend', () => {
-      if (!aDidSwipe) return;
-      if (aDx < -40) {
-        deleteBtn.style.width = '80px';
-        actionSwipeOpen = deleteBtn;
+      if (!startedSwipe) return;
+      if (preventDefault) preventDefault();
+      const isOpen = row.classList.contains('del-open');
+      let offset = isOpen ? -75 + dx : dx;
+      offset = Math.max(-75, Math.min(0, offset));
+      inner.style.transition = 'none';
+      inner.style.transform = `translateX(${offset}px)`;
+    }
+    function onEnd() {
+      if (!startedSwipe) { currentlyTracking = false; return; }
+      inner.style.transition = '';
+      inner.style.transform = '';
+      const isOpen = row.classList.contains('del-open');
+      if (!isOpen && dx < -30) {
+        row.classList.add('del-open');
+        _openActionRow = row;
       } else {
-        deleteBtn.style.width = '0';
-        actionSwipeOpen = null;
+        row.classList.remove('del-open');
+        if (_openActionRow === row) _openActionRow = null;
       }
+      currentlyTracking = false;
+    }
+
+    // Touch
+    inner.addEventListener('touchstart', e => onStart(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    inner.addEventListener('touchmove',  e => onMove(e.touches[0].clientX, e.touches[0].clientY, () => e.preventDefault()), { passive: false });
+    inner.addEventListener('touchend',   () => onEnd());
+
+    // Mouse (for desktop browser testing)
+    inner.addEventListener('mousedown', e => { onStart(e.clientX, e.clientY); });
+    window.addEventListener('mousemove', e => { if (currentlyTracking) onMove(e.clientX, e.clientY, null); });
+    window.addEventListener('mouseup',   () => { if (currentlyTracking) onEnd(); });
+
+    // Close if tapping elsewhere
+    inner.addEventListener('click', e => {
+      if (row.classList.contains('del-open')) { closeOpenActionRow(); e.stopPropagation(); }
     });
 
     card.appendChild(row);
