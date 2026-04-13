@@ -184,15 +184,7 @@
       margin-top: 1px;
     }
 
-    /* ON/OFF badge */
-    .badge {
-      font-size: 10px; font-weight: 700;
-      border-radius: 5px; padding: 2px 6px;
-      text-transform: uppercase; letter-spacing: 0.04em;
-      flex-shrink: 0;
-    }
-    .badge-on  { background: #34c759; color: #fff; }
-    .badge-off { background: #3a3a3c; color: #636366; }
+
 
     /* Chevron */
     .row-chevron { color: #3a3a3c; font-size: 14px; margin-left: 8px; flex-shrink: 0; }
@@ -1055,7 +1047,6 @@ function renderTriggerRow(key, deletable) {
     <div class="row-text">
       <div class="row-title">
         <span>${escHtml(name)}</span>
-        <span class="badge ${data.enabled ? 'badge-on' : 'badge-off'}">${data.enabled ? 'ON' : 'OFF'}</span>
       </div>
       <div class="row-subtitle">${escHtml(subtitle)}</div>
     </div>
