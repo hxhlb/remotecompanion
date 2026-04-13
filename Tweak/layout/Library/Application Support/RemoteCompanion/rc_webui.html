@@ -1,106 +1,150 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>RemoteCompanion Web UI</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/framework7@8.3.3/framework7-bundle.min.css">
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <style>
-    :root { --f7-theme-color: #007aff; }
-    [v-cloak] { display: none; }
+    :root {
+      --primary: #007aff;
+      --bg: #f2f2f7;
+      --card-bg: #ffffff;
+      --text: #000000;
+      --border: #c6c6c8;
+      --danger: #ff3b30;
+      --success: #34c759;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #000000;
+        --card-bg: #1c1c1e;
+        --text: #ffffff;
+        --border: #38383a;
+      }
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0; padding: 0;
+    }
+    .nav {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      position: sticky;
+      top: 0; z-index: 10;
+    }
+    .nav h1 {
+      font-size: 17px;
+      font-weight: 600;
+      margin: 0; flex: 1; text-align: center;
+    }
+    .nav .btn-back {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 17px;
+      cursor: pointer;
+    }
+    .container { padding: 16px; max-width: 600px; margin: 0 auto; }
+    .section-title {
+      font-size: 13px; text-transform: uppercase; color: #8e8e93;
+      margin: 16px 0 8px 16px;
+    }
+    .list {
+      background: var(--card-bg);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; text-decoration: none; color: var(--text);
+    }
+    .item:last-child { border-bottom: none; }
+    .item:active { background: rgba(0,0,0,0.05); }
+    .item-title { font-size: 17px; }
+    .item-after { color: #8e8e93; display: flex; align-items: center; gap: 8px; }
+    .badge {
+      font-size: 12px; padding: 2px 8px; border-radius: 10px;
+      color: white; font-weight: bold;
+    }
+    .badge.on { background: var(--success); }
+    .badge.off { background: #8e8e93; }
+    
+    .switch {
+      position: relative; display: inline-block; width: 51px; height: 31px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #e9e9ea; transition: .3s; border-radius: 31px;
+    }
+    .slider:before {
+      position: absolute; content: ""; height: 27px; width: 27px; left: 2px; bottom: 2px;
+      background-color: white; transition: .3s; border-radius: 50%;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    }
+    input:checked + .slider { background-color: var(--success); }
+    input:checked + .slider:before { transform: translateX(20px); }
+    
+    .btn {
+      display: block; width: 100%; padding: 14px; text-align: center;
+      background: var(--card-bg); color: var(--primary);
+      border: none; font-size: 17px; cursor: pointer; border-radius: 10px;
+      margin-bottom: 16px;
+    }
+    .btn.danger { color: var(--danger); }
+    .btn.primary { background: var(--primary); color: white; font-weight: 600; }
+    
+    #view-detail { display: none; }
   </style>
 </head>
 <body>
-  <div id="app" v-cloak>
-    <div class="view view-main">
-      <div class="page" v-if="!currentTriggerKey">
-        <div class="navbar">
-          <div class="navbar-bg"></div>
-          <div class="navbar-inner">
-            <div class="title">RemoteCompanion</div>
-          </div>
-        </div>
-        <div class="page-content">
-          <div class="block-title">All Triggers</div>
-          <div class="list links-list">
-            <ul>
-              <li v-for="(trigger, key) in triggers" :key="key">
-                <a href="#" @click.prevent="openTrigger(key)" class="item-link item-content">
-                  <div class="item-inner">
-                    <div class="item-title">{{ triggerNames[key] || key }}</div>
-                    <div class="item-after">
-                      <span v-if="trigger.enabled" class="badge color-blue">Enabled</span>
-                      <span v-else class="badge color-gray">Disabled</span>
-                    </div>
-                  </div>
-                </a>
-              </li>
-            </ul>
-          </div>
+
+  <!-- List View -->
+  <div id="view-list">
+    <div class="nav">
+      <h1>RemoteCompanion</h1>
+    </div>
+    <div class="container">
+      <div id="loading" style="text-align: center; padding: 20px;">Loading configuration...</div>
+      <div class="list" id="triggers-list"></div>
+    </div>
+  </div>
+
+  <!-- Detail View -->
+  <div id="view-detail">
+    <div class="nav">
+      <a class="btn-back" onclick="showList()">‹ Back</a>
+      <h1 id="detail-title">Trigger</h1>
+      <div style="width:50px"></div>
+    </div>
+    <div class="container">
+      <button class="btn primary" onclick="executeTrigger()">Execute Remotely</button>
+      
+      <div class="section-title">Settings</div>
+      <div class="list" style="margin-bottom: 24px;">
+        <div class="item" style="cursor: default;">
+          <span class="item-title">Enabled</span>
+          <label class="switch">
+            <input type="checkbox" id="trigger-enabled" onchange="toggleEnabled()">
+            <span class="slider"></span>
+          </label>
         </div>
       </div>
       
-      <div class="page" v-if="currentTriggerKey">
-        <div class="navbar">
-          <div class="navbar-bg"></div>
-          <div class="navbar-inner sliding">
-            <div class="left">
-              <a href="#" class="link" @click.prevent="currentTriggerKey = null">
-                <i class="icon icon-back"></i><span class="if-not-md">Back</span>
-              </a>
-            </div>
-            <div class="title">{{ triggerNames[currentTriggerKey] || currentTriggerKey }}</div>
-          </div>
-        </div>
-        <div class="page-content">
-          <div class="block">
-            <button class="button button-fill color-green" @click="fireTrigger(currentTriggerKey)">Execute Remotely</button>
-          </div>
-          <div class="list">
-            <ul>
-              <li>
-                <div class="item-content">
-                  <div class="item-inner">
-                    <div class="item-title">Enabled</div>
-                    <div class="item-after">
-                      <label class="toggle toggle-init">
-                        <input type="checkbox" v-model="currentTrigger.enabled" @change="saveConfig()">
-                        <span class="toggle-icon"></span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            </ul>
-          </div>
-          <div class="block-title">Actions</div>
-          <div class="list">
-            <ul>
-              <li v-for="(action, index) in currentTrigger.actions" :key="index">
-                <div class="item-content">
-                  <div class="item-inner">
-                    <div class="item-title">{{ typeof action === 'string' ? action : action.type }}</div>
-                    <div class="item-after">
-                      <a href="#" class="link color-red" @click.prevent="removeAction(index)">Remove</a>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            </ul>
-            <div class="block">
-               <button class="button button-outline" @click="addActionPrompt()">Add Action</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="section-title">Actions</div>
+      <div class="list" id="actions-list" style="margin-bottom: 16px;"></div>
+      <button class="btn" onclick="promptAddAction()">Add Action</button>
     </div>
   </div>
-  
-  <script src="https://cdn.jsdelivr.net/npm/framework7@8.3.3/framework7-bundle.min.js"></script>
-  <script>
-    const { createApp } = Vue;
 
+  <script>
     const triggerNames = {
         "shake": "Shake Device",
         "volume_up_hold": "Volume Up Hold",
@@ -117,80 +161,145 @@
         "trigger_statusbar_right_hold": "Status Bar Right Hold",
         "trigger_statusbar_swipe_left": "Status Bar Swipe Left",
         "trigger_statusbar_swipe_right": "Status Bar Swipe Right",
-        "trigger_home_triple_click": "Home Button (Triple Click)",
-        "trigger_home_quadruple_click": "Home Button (Quadruple Click)",
-        "trigger_home_double_click": "Home Button (Double Click)",
-        "touchid_hold": "Touch ID Hold (Rest Finger)",
-        "touchid_tap": "Touch ID Single Tap",
+        "trigger_home_triple_click": "Home Button (Triple)",
+        "trigger_home_quadruple_click": "Home Button (Quad)",
+        "trigger_home_double_click": "Home Button (Double)",
+        "touchid_hold": "Touch ID Hold",
+        "touchid_tap": "Touch ID Tap",
         "trigger_edge_left_swipe_up": "Left Edge Swipe Up",
         "trigger_edge_left_swipe_down": "Left Edge Swipe Down",
         "trigger_edge_right_swipe_up": "Right Edge Swipe Up",
         "trigger_edge_right_swipe_down": "Right Edge Swipe Down",
-        "trigger_ringer_mute": "Ringer Muted (Silent Mode On)",
-        "trigger_ringer_unmute": "Ringer Unmuted (Silent Mode Off)",
-        "trigger_ringer_toggle": "Ringer Toggled (Any Change)",
+        "trigger_ringer_mute": "Ringer Muted",
+        "trigger_ringer_unmute": "Ringer Unmuted",
+        "trigger_ringer_toggle": "Ringer Toggled",
         "trigger_bottombar_swipe_left": "Bottom Bar Swipe Left",
         "trigger_bottombar_swipe_right": "Bottom Bar Swipe Right"
     };
 
-    createApp({
-      data() {
-        return {
-          config: {},
-          triggerNames: triggerNames,
-          currentTriggerKey: null,
-          f7App: null
-        }
-      },
-      computed: {
-        triggers() {
-          return this.config.triggers || {};
-        },
-        currentTrigger() {
-          if (!this.currentTriggerKey) return null;
-          return this.config.triggers[this.currentTriggerKey];
-        }
-      },
-      mounted() {
-        this.f7App = new Framework7({ theme: 'ios' });
-        this.loadConfig();
-      },
-      methods: {
-        loadConfig() {
-          fetch('/api/config')
-            .then(res => res.json())
-            .then(data => {
-              this.config = data;
-            });
-        },
-        saveConfig() {
-          fetch('/api/config', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(this.config)
-          });
-        },
-        openTrigger(key) {
-          this.currentTriggerKey = key;
-        },
-        fireTrigger(key) {
-          fetch('/api/trigger/' + key, { method: 'POST' });
-          this.f7App.toast.create({ text: 'Trigger executed!', closeTimeout: 2000, position: 'top' }).open();
-        },
-        removeAction(index) {
-          this.currentTrigger.actions.splice(index, 1);
-          this.saveConfig();
-        },
-        addActionPrompt() {
-          this.f7App.dialog.prompt('Enter action command (e.g. "playpause", "flashlight toggle")', 'Add Action', (val) => {
-            if (val) {
-              this.currentTrigger.actions.push(val);
-              this.saveConfig();
-            }
-          });
-        }
+    let config = {};
+    let currentTriggerKey = null;
+
+    async function loadConfig() {
+      try {
+        const res = await fetch('/api/config');
+        config = await res.json();
+        document.getElementById('loading').style.display = 'none';
+        renderList();
+      } catch (e) {
+        document.getElementById('loading').innerText = 'Failed to load. Is the server running?';
       }
-    }).mount('#app');
+    }
+
+    async function saveConfig() {
+      try {
+        await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config)
+        });
+        renderList();
+      } catch (e) {
+        alert('Failed to save config');
+      }
+    }
+
+    function renderList() {
+      const list = document.getElementById('triggers-list');
+      list.innerHTML = '';
+      if (!config.triggers) return;
+
+      for (const [key, trigger] of Object.entries(config.triggers)) {
+        const name = triggerNames[key] || key;
+        const statusClass = trigger.enabled ? 'on' : 'off';
+        const statusText = trigger.enabled ? 'Enabled' : 'Disabled';
+        
+        const item = document.createElement('a');
+        item.className = 'item';
+        item.onclick = () => openDetail(key);
+        item.innerHTML = `
+          <div class="item-title">${name}</div>
+          <div class="item-after"><span class="badge ${statusClass}">${statusText}</span> ›</div>
+        `;
+        list.appendChild(item);
+      }
+    }
+
+    function openDetail(key) {
+      currentTriggerKey = key;
+      const trigger = config.triggers[key];
+      document.getElementById('detail-title').innerText = triggerNames[key] || key;
+      document.getElementById('trigger-enabled').checked = !!trigger.enabled;
+      
+      renderActions();
+      
+      document.getElementById('view-list').style.display = 'none';
+      document.getElementById('view-detail').style.display = 'block';
+    }
+
+    function showList() {
+      currentTriggerKey = null;
+      document.getElementById('view-detail').style.display = 'none';
+      document.getElementById('view-list').style.display = 'block';
+    }
+
+    function renderActions() {
+      const list = document.getElementById('actions-list');
+      list.innerHTML = '';
+      const trigger = config.triggers[currentTriggerKey];
+      if (!trigger.actions || trigger.actions.length === 0) {
+        list.innerHTML = '<div class="item" style="cursor:default"><span class="item-title" style="color:#8e8e93">No actions configured</span></div>';
+        return;
+      }
+      
+      trigger.actions.forEach((action, idx) => {
+        const actionName = typeof action === 'string' ? action : action.type;
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.style.cursor = 'default';
+        item.innerHTML = `
+          <span class="item-title">${actionName}</span>
+          <span class="item-after"><a href="#" style="color:var(--danger);text-decoration:none;" onclick="removeAction(${idx})">Remove</a></span>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function toggleEnabled() {
+      config.triggers[currentTriggerKey].enabled = document.getElementById('trigger-enabled').checked;
+      saveConfig();
+    }
+
+    function removeAction(idx) {
+      if (confirm('Remove this action?')) {
+        config.triggers[currentTriggerKey].actions.splice(idx, 1);
+        saveConfig();
+        renderActions();
+      }
+    }
+
+    function promptAddAction() {
+      const val = prompt('Enter action command (e.g. "playpause", "flashlight toggle")');
+      if (val && val.trim().length > 0) {
+        if (!config.triggers[currentTriggerKey].actions) {
+          config.triggers[currentTriggerKey].actions = [];
+        }
+        config.triggers[currentTriggerKey].actions.push(val.trim());
+        saveConfig();
+        renderActions();
+      }
+    }
+
+    async function executeTrigger() {
+      try {
+        await fetch('/api/trigger/' + currentTriggerKey, { method: 'POST' });
+        alert('Trigger executed!');
+      } catch (e) {
+        alert('Failed to execute trigger');
+      }
+    }
+
+    loadConfig();
   </script>
 </body>
 </html>

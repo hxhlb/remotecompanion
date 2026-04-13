@@ -8,7 +8,6 @@
 @property (nonatomic, assign) BOOL webUIEnabled;
 @property (nonatomic, assign) BOOL nfcEnabled;
 @property (nonatomic, assign) BOOL rootEnabled;
-@property (nonatomic, assign) float flashBrightness;
 
 
 + (instancetype)sharedManager;

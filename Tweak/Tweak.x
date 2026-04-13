@@ -962,13 +962,7 @@ static void load_trigger_config() {
 static void update_simulation_observers();
 
 static float get_flash_brightness() {
-    float val = 1.0f;
-    if (g_triggerConfig && g_triggerConfig[@"flashBrightness"]) {
-        val = [g_triggerConfig[@"flashBrightness"] floatValue];
-    }
-    if (val < 0.01f) val = 0.01f;
-    if (val > 1.0f) val = 1.0f;
-    return val;
+    return 1.0f;
 }
 
 // Forward declarations for gesture management functions

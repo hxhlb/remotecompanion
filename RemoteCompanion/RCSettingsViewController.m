@@ -153,7 +153,7 @@
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    if (section == 0) return 4; // Master + NFC + Flashlight + WebUI
+    if (section == 0) return 3; // Master + NFC + WebUI
     return 2; // Export, Import
 }
 
@@ -189,17 +189,6 @@
             cell.accessoryView = _nfcSwitch;
             cell.selectionStyle = UITableViewCellSelectionStyleNone;
         } else if (indexPath.row == 2) {
-            cell.textLabel.text = @"Flashlight Level";
-            
-            UISlider *slider = [[UISlider alloc] initWithFrame:CGRectMake(0, 0, 120, 30)];
-            slider.minimumValue = 0.01; // Minimum level usually needs to be > 0 for torch
-            slider.maximumValue = 1.0;
-            slider.value = [RCConfigManager sharedManager].flashBrightness;
-            [slider addTarget:self action:@selector(flashlightBrightnessChanged:) forControlEvents:UIControlEventValueChanged];
-            
-            cell.accessoryView = slider;
-            cell.selectionStyle = UITableViewCellSelectionStyleNone;
-        } else if (indexPath.row == 3) {
             cell.textLabel.text = @"Web UI (Port 8080)";
             _webUISwitch = [[UISwitch alloc] init];
             _webUISwitch.on = [RCConfigManager sharedManager].webUIEnabled;
@@ -250,10 +239,6 @@
 
 - (void)webUIToggleChanged:(UISwitch *)sender {
     [RCConfigManager sharedManager].webUIEnabled = sender.on;
-}
-
-- (void)flashlightBrightnessChanged:(UISlider *)sender {
-    [RCConfigManager sharedManager].flashBrightness = sender.value;
 }
 
 - (void)exportConfig {

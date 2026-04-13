@@ -111,12 +111,6 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
             _config[@"hapticsEnabled"] = @YES;
             [self saveConfig];
         }
-
-        // Auto-add flashBrightness
-        if (_config[@"flashBrightness"] == nil) {
-            _config[@"flashBrightness"] = @1.0;
-            [self saveConfig];
-        }
     } else {
         // Default config with all triggers
         NSLog(@"[RCConfigManager] Using default config");
@@ -126,7 +120,6 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
             @"webUIEnabled": @NO,
             @"nfcEnabled": @YES,
             @"rootEnabled": @YES,
-            @"flashBrightness": @1.0,
             @"triggers": [@{
                 @"volume_up_hold": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
                 @"volume_down_hold": [@{ @"enabled": @NO, @"actions": @[] } mutableCopy],
@@ -231,18 +224,6 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
 
 - (void)setHapticsEnabled:(BOOL)hapticsEnabled {
     _config[@"hapticsEnabled"] = @(hapticsEnabled);
-    [self saveConfig];
-}
-
-- (float)flashBrightness {
-    if (!_config[@"flashBrightness"]) {
-        return 1.0f;
-    }
-    return [_config[@"flashBrightness"] floatValue];
-}
-
-- (void)setFlashBrightness:(float)flashBrightness {
-    _config[@"flashBrightness"] = @(flashBrightness);
     [self saveConfig];
 }
 
