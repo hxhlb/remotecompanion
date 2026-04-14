@@ -111,6 +111,12 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
             _config[@"hapticsEnabled"] = @YES;
             [self saveConfig];
         }
+
+        // Auto-add webUIEnabled (default to NO for new users/upgrades for security)
+        if (_config[@"webUIEnabled"] == nil) {
+            _config[@"webUIEnabled"] = @NO;
+            [self saveConfig];
+        }
     } else {
         // Default config with all triggers
         NSLog(@"[RCConfigManager] Using default config");
