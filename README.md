@@ -311,6 +311,29 @@ curl -X POST "http://[device_ip]:8080/api/command" -d "haptic"
 > [!TIP]
 > This API is cross-platform and requires no special tools on the caller device, making it ideal for IoT integrations.
 
+#### Running Automations via API
+You can also fire any automation sequence you've built in the app using its internal key.
+
+**1. Find your Automation Key:**
+Call the `list-triggers` command to see all your automations and their keys:
+```bash
+http://[device_ip]:8080/api/command?cmd=list-triggers
+```
+Example Output:
+```json
+{"ok": true, "output": "Configured Automations:\n- trigger_1: Good Night\n- trigger_2: Start Workout"}
+```
+
+**2. Execute the Automation:**
+Use either the generic command API or the dedicated trigger endpoint:
+```bash
+# Via command API
+http://[device_ip]:8080/api/command?cmd=trigger%20trigger_1
+
+# Via dedicated trigger endpoint (GET or POST)
+http://[device_ip]:8080/api/trigger/trigger_1
+```
+
 <details>
 <summary><h3>Home Assistant Setup</h3></summary>
 

@@ -1354,12 +1354,15 @@ void RCExecuteTrigger(NSString *triggerKey) {
         return;
     }
     
-    NSDictionary *triggers = g_triggerConfig[@"triggers"];
-    NSDictionary *trigger = triggers[triggerKey];
+    id triggers = g_triggerConfig[@"triggers"];
+    if (!triggers || ![triggers isKindOfClass:[NSDictionary class]]) {
+        SRLog(@"ERROR: Triggers dictionary is missing or invalid");
+        return;
+    }
     
-    if (!trigger) {
-        SRLog(@"TRIGGER NOT FOUND: '%@'", triggerKey);
-        // Special case: if it's an NFC tag not in config, maybe log UID?
+    id trigger = ((NSDictionary *)triggers)[triggerKey];
+    if (!trigger || ![trigger isKindOfClass:[NSDictionary class]]) {
+        SRLog(@"TRIGGER NOT FOUND or INVALID: '%@'", triggerKey);
         return;
     }
     
@@ -3873,6 +3876,28 @@ static NSString *handle_command(NSString *cmd) {
         });
         
         return [NSString stringWithFormat:@"Triggered shortcut: %@\n", shortcutName];
+    } else if ([cleanCmd isEqualToString:@"list-triggers"]) {
+        load_trigger_config();
+        if (!g_triggerConfig) return @"Error: No trigger config found\n";
+        id triggers = g_triggerConfig[@"triggers"];
+        if (!triggers || ![triggers isKindOfClass:[NSDictionary class]]) return @"Error: No triggers configured\n";
+        
+        NSMutableString *list = [NSMutableString stringWithString:@"Configured Automations:\n"];
+        NSArray *allKeys = [(NSDictionary *)triggers allKeys];
+        for (NSString *key in [allKeys sortedArrayUsingSelector:@selector(compare:)]) {
+            NSDictionary *trigger = triggers[key];
+            if ([trigger isKindOfClass:[NSDictionary class]]) {
+                NSString *title = trigger[@"title"] ?: @"Untitled";
+                [list appendFormat:@"- %@: %@\n", key, title];
+            }
+        }
+        return list;
+    } else if ([cleanCmd hasPrefix:@"trigger "]) {
+        NSString *key = [[cleanCmd substringFromIndex:8] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            RCExecuteTrigger(key);
+        });
+        return [NSString stringWithFormat:@"Executing trigger: %@\n", key];
     }
     return nil;
 }
@@ -4029,11 +4054,10 @@ static void start_web_server() {
                                     }
 
                                     if (command && command.length > 0) {
-                                        __block NSString *output = @"";
-                                        dispatch_sync(dispatch_get_main_queue(), ^{
-                                            output = handle_command(command) ?: @"Command executed";
+                                        dispatch_async(dispatch_get_main_queue(), ^{
+                                            handle_command(command);
                                         });
-                                        NSDictionary *resp = @{@"ok": @YES, @"command": command, @"output": output};
+                                        NSDictionary *resp = @{@"ok": @YES, @"command": command, @"status": @"Acknowledged"};
                                         NSData *respData = [NSJSONSerialization dataWithJSONObject:resp options:0 error:nil];
                                         NSString *jsonStr = [[NSString alloc] initWithData:respData encoding:NSUTF8StringEncoding];
                                         responseString = [NSString stringWithFormat:@"HTTP/1.1 200 OK\r\n%@Content-Type: application/json\r\nContent-Length: %lu\r\n\r\n%@", cors, (unsigned long)respData.length, jsonStr];
@@ -4041,12 +4065,18 @@ static void start_web_server() {
                                         responseString = [NSString stringWithFormat:@"HTTP/1.1 400 Bad Request\r\n%@Content-Length: 15\r\n\r\nMissing command", cors];
                                     }
                                 }
-                            } else if ([path hasPrefix:@"/api/trigger/"] && [method isEqualToString:@"POST"]) {
+                            } else if ([path hasPrefix:@"/api/trigger/"] && ([method isEqualToString:@"POST"] || [method isEqualToString:@"GET"])) {
                                 load_trigger_config();
                                 if (![g_triggerConfig[@"webUIEnabled"] boolValue]) {
                                     responseString = [NSString stringWithFormat:@"HTTP/1.1 403 Forbidden\r\n%@Content-Length: 17\r\n\r\nWeb UI is disabled", cors];
                                 } else {
                                     NSString *triggerKey = [path substringFromIndex:@"/api/trigger/".length];
+                                    NSRange qRange = [triggerKey rangeOfString:@"?"];
+                                    if (qRange.location != NSNotFound) {
+                                        triggerKey = [triggerKey substringToIndex:qRange.location];
+                                    }
+                                    triggerKey = [triggerKey stringByRemovingPercentEncoding];
+                                    
                                     dispatch_async(dispatch_get_main_queue(), ^{
                                         RCExecuteTrigger(triggerKey);
                                     });
