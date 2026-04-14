@@ -51,13 +51,19 @@ RemoteCompanion v3.0 introduces a desktop-class Web UI designed to mirror the na
 
 ## What you can do
 
-### Media & Volume
+<details>
+<summary><h3>Media & Volume</h3></summary>
+
 - `rc play` / `rc pause` / `rc playpause` / `rc next` / `rc prev`
 - `rc volume 0-100` - Set volume level.
 - `rc mute [on|off|toggle|status]` - Control media mute state.
 - `rc anc [on|off|transparency]` - Control headphone ANC (requires Sonitus).
 
-### Device Control
+</details>
+
+<details>
+<summary><h3>Device Control</h3></summary>
+
 - `rc lock` / `rc lock toggle`
 - `rc unlock <pin>` - Wakes and unlocks the device.
 - `rc button [power|lock|home|volup|voldown|mute]` - Simulate physical buttons.
@@ -72,7 +78,11 @@ RemoteCompanion v3.0 introduces a desktop-class Web UI designed to mirror the na
 - `rc switcher` - Opens/toggles the App Switcher.
 - `rc vibration [silent-toggle|ring-toggle]` - System "Vibrate on Silent/Ring" settings.
 
-### Apps & Shortcuts
+</details>
+
+<details>
+<summary><h3>Apps & Shortcuts</h3></summary>
+
 - `rc open <alias|bundleID>` (e.g., `youtube`, `spotify`, `settings`, `messages`, `home`, `photos`, `camera`, `clock`, `maps`, `calendar`, `weather`, `notes`, `reminders`, `appstore`, `mail`, `music`, `phone`, `stocks`, `calculator`, `tv`, `wallet`, `facetime`, `files`).
 - `rc kill <alias|bundleID>` - Force close an app.
 - `rc shortcut -r "Name" [-p "Input"]` - Run any Shortcut (requires SpringCuts).
@@ -80,14 +90,23 @@ RemoteCompanion v3.0 introduces a desktop-class Web UI designed to mirror the na
 - `rc spotify <playlist|album|artist> <id>` - Play specific Spotify content.
 - `rc spotify play` - Resume Spotify playback.
 
-### Connectivity
+</details>
+
+<details>
+<summary><h3>Connectivity</h3></summary>
+
 - `rc wifi [on|off|toggle]` / `rc bluetooth [on|off|toggle]`
 - `rc bluetooth [connect|disconnect] <name>` - Manage paired devices.
 - `rc airplay list` - See speakers and their UIDs.
 - `rc airplay connect <UID|Name>` / `rc airplay disconnect`
 
-### Hardware Triggers (Tweak App)
+</details>
+
+<details>
+<summary><h3>Hardware Triggers (Tweak App)</h3></summary>
+
 Configure these in the `RemoteCompanion` app for custom action sequences. Tip: **Long-press** any trigger in the app to instantly test and run its assigned actions.
+
 - **Hardware Buttons**:
   - **Power**: Double-tap, Long-press, **Triple/Quadruple click**, or **Power + Volume Up/Down** combos.
   - **Volume**: Long hold Up/Down (0.3s) or **Volume Up + Down** combo.
@@ -105,14 +124,23 @@ Configure these in the `RemoteCompanion` app for custom action sequences. Tip: *
   - **WiFi/Bluetooth**: Trigger actions on network or device connectivity.
   - **App Launch**: Fire actions when a specific app is opened.
 
-### Text & Notifications
+</details>
+
+<details>
+<summary><h3>Text & Notifications</h3></summary>
+
 - `rc type "Text"` - Type text (supports symbols).
 - `rc paste "Text"` - Paste into clipboard.
 - `rc key <hex>` - Specific keyboard keys (e.g., `0x04` for 'A', `0x28` for Enter).
 - `rc log` - View the RemoteCompanion server logs.
 
-### Status & Queries
+</details>
+
+<details>
+<summary><h3>Status & Queries</h3></summary>
+
 Get instant feedback from your device state.
+
 - `rc volume` - Returns current volume %.
 - `rc app` - Returns foreground app bundle ID.
 - `rc is-locked` / `rc lock status` - Returns `locked` or `unlocked`.
@@ -128,17 +156,28 @@ Get instant feedback from your device state.
 - `rc wifi status` / `rc bt status` - Returns connectivity states.
 - `rc flashlight status` - Returns torch state.
 
-### Conditional Actions
+</details>
+
+<details>
+<summary><h3>Conditional Actions</h3></summary>
+
 Combine status queries with actions for smart automation:
+
 - **Orientation-Awareness**: `If Orientation is Landscape` -> `Flashlight Toggle`.
 - **Bluetooth/Wi-Fi State**: `If Wi-Fi is OFF` -> `Wi-Fi ON`.
 
-### System & Diagnostics
+</details>
+
+<details>
+<summary><h3>System & Diagnostics</h3></summary>
+
 - `rc uicache` - Refresh the icon cache.
 - `rc respring` - Restart SpringBoard.
 - `rc ldrestart` - Soft-reboot the device.
 - `rc userspace-reboot` - Restart userspace.
 - `rc webui [on|off|status]` - Enable, disable, or check the status of the Web UI server.
+
+</details>
 
 
 <details>
@@ -222,11 +261,16 @@ Use the `rc blacklist` command to manage the list:
 
 ## Getting Started
 
-### 1. Requirements
+<details>
+<summary><h3>1. Requirements</h3></summary>
+
 - A **Jailbroken Device** (iOS 14+). Supports both Rootless (iOS 15+) and Rootful (iOS 14) environments.
 - The `RemoteCompanion` tweak installed.
 
-### 2. Installation Options
+</details>
+
+<details>
+<summary><h3>2. Installation Options</h3></summary>
 
 #### Option 1: Repository (Recommended)
 Add `https://saihgupr.github.io/remotecompanion` to Sileo or Zebra
@@ -240,6 +284,8 @@ Download the `.deb` from [Releases](https://github.com/saihgupr/remotecompanion/
 
 #### Option 3: Build from Source
 `cd Tweak && make package install`.
+
+</details>
 
 ### 3. Usage Options
 Choose the control method that best fits your needs:
@@ -438,7 +484,8 @@ RemoteCompanion implements several measures to ensure your device remains secure
 
 - **Local Access**: Local apps and the `rc` CLI on the device communicate directly with the socket file, ensuring zero network exposure.
 
-## Troubleshooting
+<details>
+<summary><h2>Troubleshooting</h2></summary>
 
 ### Apple Pay Issues
 If you experience the "Updating Cards" screen or other conflicts with Apple Pay when waking your device, you can disable the background NFC scanning feature.
@@ -452,6 +499,8 @@ Due to Pointer Authentication Code (PAC) changes in modern toolchains, iOS 14 on
 - **Supported**: iOS 14 on A11 and below (iPhone 8/X and older, iPad Air 2, etc.)
 - **Supported**: iOS 15+ on all devices.
 - **Workaround**: If you are on iOS 14 with a newer device, you may need to compile the tweak using **Xcode 15.4** or earlier to ensure correct PAC signatures.
+
+</details>
 
 
 ## Support & Feedback
