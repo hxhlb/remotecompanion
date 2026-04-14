@@ -4,14 +4,12 @@ RemoteCompanion provides fast, scriptable system control for modern rootless jai
 
 > [!IMPORTANT]
 > **What's New in v3.0**
-> - **Premium Web UI Refactor**: Completely redesigned the web-based automation hub to match the iOS app's premium "Inset Grouped" aesthetic. Manage, edit, and remotely test your automations from any device on your network.
-> - **Scheduled Triggers**: Run action sequences at specific times of the day and on specific days of the week. Perfect for daily cleanups or time-based alerts.
-> - **Notification Triggers**: Bind actions to incoming notifications. Filter by app or keyword to build powerful notification-driven automations.
-> - **Flashlight Intensity**: Control the granular brightness of your flashlight via the new `rc flashlight <level>` command.
-> - **Shake Trigger**: New "Motion Gestures" section with "Shake Device" trigger support.
-> - **Action Copy-Paste**: Long-press any action entry to copy it to a global clipboard and paste it elsewhere in your sequence.
-> - **App Launch Trigger**: Fire actions when a specific application is opened.
-> - **Conditional Actions**: Support for optional "Else" branches and new "Front Application" status queries.
+> - **Automations API (v2)**: New structured discovery endpoints at `/api/triggers` and `/api/commands` returning clean JSON for effortless integration.
+> - **Copy API Link**: Instantly copy any trigger's direct execution URL from the Web UI using the new copy icon (available in list view and action editor).
+> - **Premium Web UI Refactor**: Completely redesigned the web-based automation hub to match the iOS app's premium aesthetic.
+> - **Scheduled & Notification Triggers**: Automation is now power-user ready with time-based and event-driven triggers.
+> - **Flashlight Intensity**: Granular control (`1-100`) via the new `rc flashlight <level>` command.
+> - **Security Hardening**: Web UI is now disabled by default for new installations.
 
 
 
@@ -24,9 +22,8 @@ RemoteCompanion provides fast, scriptable system control for modern rootless jai
 </p>
 
 ## Features
-- **Instant Response**: High-speed command execution (~0.2s) using optimized SSH-tunneled UNIX domain sockets.
-- **Premium Web UI**: Desktop-class automation hub with iOS aesthetics, allowing full workflow engineering and remote testing from any browser.
-- **Smart Control**: Run multi-step action sequences, edit existing actions inline, or control settings remotely.
+- **Premium Web UI**: Desktop-class automation hub with iOS aesthetics, allowing full workflow engineering, remote testing, and **one-tap API URL copying**.
+- **Automations API v2**: Structured JSON discovery enables seamless integration with Home Assistant, Node-RED, or custom scripts.
 
 - **Hardware Triggers**: Bind actions to Power/Volume buttons, Home button, Touch ID (Tap/Hold), or the Ringer Switch.
 - **Visual Excellence**: Modern iOS aesthetics with Large Titles, SF Symbols, and a professional dark terminal editor.
@@ -311,28 +308,58 @@ curl -X POST "http://[device_ip]:8080/api/command" -d "haptic"
 > [!TIP]
 > This API is cross-platform and requires no special tools on the caller device, making it ideal for IoT integrations.
 
-#### Running Automations via API
-You can also fire any automation sequence you've built in the app using its internal key.
+#### Remote Command API
+You can control your device by sending commands directly to the Remote Command API.
 
-**1. Find your Automation Key:**
-Call the `list-triggers` command to see all your automations and their keys:
+**1. Discover Available Commands:**
+Get a list of all supported commands and their descriptions:
 ```bash
-http://[device_ip]:8080/api/command?cmd=list-triggers
+http://[device_ip]:8080/api/commands
+```
+
+**2. Execute a Command:**
+Send the command string via the `cmd` parameter:
+```bash
+# Example: Lock orientation
+http://[device_ip]:8080/api/command?cmd=rotate%20lock
+```
+
+#### Running Automations via API
+You can also fire any multi-action automation sequence you've built in the app directly via their dedicated URLs.
+
+**1. Discover your Automations:**
+Call the discovery endpoint to see all configured triggers and their direct execution URLs:
+```bash
+http://[device_ip]:8080/api/triggers
 ```
 Example Output:
 ```json
-{"ok": true, "output": "Configured Automations:\n- trigger_1: Good Night\n- trigger_2: Start Workout"}
+{
+  "ok": true,
+  "triggers": [
+    {
+      "id": "trigger_1",
+      "name": "Good Night",
+      "url": "/api/trigger/trigger_1"
+    },
+    {
+      "id": "app_launch_com.apple.Music",
+      "name": "Launch Music",
+      "url": "/api/trigger/app_launch_com.apple.Music"
+    }
+  ]
+}
 ```
 
 **2. Execute the Automation:**
-Use either the generic command API or the dedicated trigger endpoint:
+Simply perform a GET or POST request to the `url` provided in the discovery response:
 ```bash
-# Via command API
-http://[device_ip]:8080/api/command?cmd=trigger%20trigger_1
-
-# Via dedicated trigger endpoint (GET or POST)
+# Example for trigger_1
 http://[device_ip]:8080/api/trigger/trigger_1
 ```
+
+> [!TIP]
+> **Pro Tip:** In the Web UI, you can swipe any trigger or open the action editor and tap the **Copy** icon to instantly get the full URL (including your device's IP) for that specific trigger.
 
 <details>
 <summary><h3>Home Assistant Setup</h3></summary>

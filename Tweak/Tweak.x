@@ -4108,6 +4108,37 @@ static void start_web_server() {
                                     jsonStr = [jsonStr stringByReplacingOccurrencesOfString:@"\\/" withString:@"/"];
                                     responseString = [NSString stringWithFormat:@"HTTP/1.1 200 OK\r\n%@Content-Type: application/json\r\nContent-Length: %lu\r\n\r\n%@", cors, (unsigned long)[jsonStr lengthOfBytesUsingEncoding:NSUTF8StringEncoding], jsonStr];
                                 }
+                            } else if ([path isEqualToString:@"/api/commands"] && [method isEqualToString:@"GET"]) {
+                                NSArray *commandList = @[
+                                    @{@"command": @"play", @"desc": @"Media: Play content"},
+                                    @{@"command": @"pause", @"desc": @"Media: Pause content"},
+                                    @{@"command": @"next", @"desc": @"Media: Skip to next track"},
+                                    @{@"command": @"prev", @"desc": @"Media: Go to previous track"},
+                                    @{@"command": @"vol-up", @"desc": @"Volume: Increase volume"},
+                                    @{@"command": @"vol-down", @"desc": @"Volume: Decrease volume"},
+                                    @{@"command": @"set-vol <0-100>", @"desc": @"Volume: Set volume level"},
+                                    @{@"command": @"brightness <0-100>", @"desc": @"Display: Set screen brightness"},
+                                    @{@"command": @"flashlight <1-100>", @"desc": @"Flashlight: Toggle on/off or set intensity"},
+                                    @{@"command": @"respring", @"desc": @"System: Restart SpringBoard"},
+                                    @{@"command": @"ldrestart", @"desc": @"System: Soft-reboot device"},
+                                    @{@"command": @"uicache", @"desc": @"System: Refresh application cache"},
+                                    @{@"command": @"home", @"desc": @"System: Simulate Home button press"},
+                                    @{@"command": @"screenshot", @"desc": @"System: Take a screenshot"},
+                                    @{@"command": @"rotate lock/unlock", @"desc": @"System: Toggle orientation lock"},
+                                    @{@"command": @"bt on/off", @"desc": @"Toggles: Bluetooth power"},
+                                    @{@"command": @"wifi on/off", @"desc": @"Toggles: WiFi power"},
+                                    @{@"command": @"airplane on/off", @"desc": @"Toggles: Airplane Mode power"},
+                                    @{@"command": @"dnd on/off", @"desc": @"Toggles: Do Not Disturb Mode"},
+                                    @{@"command": @"shortcut \"Name\"", @"desc": @"Automation: Run a Siri Shortcut"},
+                                    @{@"command": @"trigger <ID>", @"desc": @"Automation: Fire a configured RemoteCompanion trigger"},
+                                    @{@"command": @"list-triggers", @"desc": @"Discovery: Returns a plain-text list of configured automations"},
+                                    @{@"command": @"exec \"shell cmd\"", @"desc": @"Advanced: Execute a shell command as mobile user"},
+                                    @{@"command": @"root \"shell cmd\"", @"desc": @"Advanced: Execute a shell command as root (requires rc-root)"}
+                                ];
+                                NSDictionary *resp = @{@"ok": @YES, @"commands": commandList};
+                                NSData *respData = [NSJSONSerialization dataWithJSONObject:resp options:NSJSONWritingPrettyPrinted error:nil];
+                                NSString *jsonStr = [[NSString alloc] initWithData:respData encoding:NSUTF8StringEncoding];
+                                responseString = [NSString stringWithFormat:@"HTTP/1.1 200 OK\r\n%@Content-Type: application/json\r\nContent-Length: %lu\r\n\r\n%@", cors, (unsigned long)[jsonStr lengthOfBytesUsingEncoding:NSUTF8StringEncoding], jsonStr];
                             } else if ([path hasPrefix:@"/api/command"]) {
                                 load_trigger_config();
                                 if (![g_triggerConfig[@"webUIEnabled"] boolValue]) {

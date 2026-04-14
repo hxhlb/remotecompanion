@@ -2,19 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
-## [3.0.0] - 2026-04-13
+## [3.0.0] - 2026-04-14
 
 ### Added
-- **Refactored Web UI**: Completely redesigned the web interface to match the iOS app's premium "Inset Grouped" aesthetic. 
-  - **Premium Design**: Modern iOS-consistent look with glassmorphism on the navigation bar, SF Symbols-style iconography, and high-contrast dark mode.
-  - **Full Automation Management**: Creating, renaming, and deleting dynamic triggers (NFC, WiFi, BT, App Launch, Notifications, Scheduled) is now fully supported from the browser.
-  - **Advanced Action Editor**: A powerful new sequence editor with reorderable actions, support for logic blocks (`If/Else/End`), and inline value editing.
-  - **Remote Execution**: Added "Execute" buttons to every trigger for instant remote testing and verification.
-  - **Favorites Access**: Pinned "Favorites" section mirroring the iOS app's home screen.
+- **Automations API (v2)**: Introduced structured discovery endpoints at `GET /api/triggers` and `GET /api/commands`. These return clean JSON for effortless integration with external services like Home Assistant or Node-RED.
+- **Web UI "Copy API Link"**: 
+  - Added a new **Copy** action to the trigger list (swipe) and the Actions Panel navbar.
+  - Instantly copy a trigger's direct execution URL (including device IP) for easy integration with Shortcuts, Home Assistant, or CLI scripts.
+  - Added an interactive **Green Checkmark** success indicator and tactile "push" animations when a URL is copied.
 - **Scheduled Triggers**: Run action sequences at specific times of the day and on specific days of the week. Perfect for daily cleanups, automated system checks, or time-based alerts.
 - **Notification Triggers**: Bind actions to incoming notifications from any app. Filter by bundle ID or specific text within the notification (title/subtitle/message).
 - **Flashlight Intensity Control**: The `rc flashlight` command now supports values from 1-100 to set the brightness level of the device torch (e.g., `rc flashlight 50`).
-- **Schedule Configuration UI**: A new, intuitive picker for selecting execution time and repeat days (Daily or specific weekdays).
+- **Motion Gestures**: Support for "Shake Device" handler.
+- **App Launch Trigger**: Fire actions when specific applications are opened.
+- **Wait Action**: Added "Delay" action to pause sequence execution.
+- **Native Shortcut Support**: High-performance execution of Siri Shortcuts via WorkflowKit.
+- **Refactored Web UI**: Completely redesigned the web interface to match the iOS app's premium "Inset Grouped" aesthetic. 
+  - **Premium Design**: Modern iOS-consistent look with glassmorphism on the navigation bar, SF Symbols-style iconography, and high-contrast dark mode.
+  - **Full Automation Management**: Creating, renaming, and deleting dynamic triggers is now fully supported from the browser.
+  - **Advanced Action Editor**: A powerful new sequence editor with reorderable actions, support for logic blocks (`If/Else/End`), and inline value editing.
+  - **Remote Execution**: Added "Execute" buttons to every trigger for instant remote testing and verification.
+
+### Changed
+- **Security First**: The Web UI toggle is now set to **OFF** by default for new installations to enhance device security.
+- **API Cleanliness**: Fixed JSON URL formatting in API responses to remove backslash escaping, resulting in clean, ready-to-use URL strings.
+- **Clipboard Reliability**: Hardened the copy-to-clipboard logic to ensure it works consistently across all browser environments, including insecure IP-based connections.
+
+### Fixed
+- Resolved race condition in button hook long-press detection.
+- Fixed layout issues on mobile Safari for large automation lists.
 
 
 ## [2.4.0~beta1] - 2026-03-23
