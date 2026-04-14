@@ -3986,6 +3986,26 @@ static void start_web_server() {
                                     NSData *htmlData = [html dataUsingEncoding:NSUTF8StringEncoding];
                                     responseString = [NSString stringWithFormat:@"HTTP/1.1 200 OK\r\n%@Content-Type: text/html\r\nContent-Length: %lu\r\n\r\n%@", cors, (unsigned long)htmlData.length, html];
                                 }
+                            } else if ([path isEqualToString:@"/favicon.ico"] || [path isEqualToString:@"/apple-touch-icon.png"] || [path hasPrefix:@"/favicon-"] || [path hasPrefix:@"/android-chrome-"] || [path isEqualToString:@"/site.webmanifest"]) {
+                                NSString *filename = [path lastPathComponent];
+                                NSString *assetPath = [NSString stringWithFormat:@"/Library/Application Support/RemoteCompanion/%@", filename];
+                                NSData *assetData = [NSData dataWithContentsOfFile:assetPath];
+                                if (!assetData) {
+                                    assetPath = [NSString stringWithFormat:@"/var/jb/Library/Application Support/RemoteCompanion/%@", filename];
+                                    assetData = [NSData dataWithContentsOfFile:assetPath];
+                                }
+                                
+                                if (assetData) {
+                                    NSString *contentType = @"application/octet-stream";
+                                    if ([path hasSuffix:@".ico"]) contentType = @"image/x-icon";
+                                    else if ([path hasSuffix:@".png"]) contentType = @"image/png";
+                                    else if ([path hasSuffix:@".webmanifest"] || [path hasSuffix:@".json"]) contentType = @"application/manifest+json";
+                                    
+                                    NSString *header = [NSString stringWithFormat:@"HTTP/1.1 200 OK\r\n%@Content-Type: %@\r\nContent-Length: %lu\r\n\r\n", cors, contentType, (unsigned long)assetData.length];
+                                    write(new_socket, [header UTF8String], [header lengthOfBytesUsingEncoding:NSUTF8StringEncoding]);
+                                    write(new_socket, [assetData bytes], [assetData length]);
+                                    responseString = nil; // Skip default write
+                                }
                             } else if ([path isEqualToString:@"/api/config"]) {
                                 load_trigger_config();
                                 if (![g_triggerConfig[@"webUIEnabled"] boolValue]) {
@@ -4165,7 +4185,9 @@ static void start_web_server() {
                                 }
                             }
                             
-                            write(new_socket, [responseString UTF8String], [responseString lengthOfBytesUsingEncoding:NSUTF8StringEncoding]);
+                            if (responseString) {
+                                write(new_socket, [responseString UTF8String], [responseString lengthOfBytesUsingEncoding:NSUTF8StringEncoding]);
+                            }
                         }
                     }
                 }
