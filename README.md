@@ -298,6 +298,12 @@ http://[device_ip]:8080/api/command?cmd=play
 http://[device_ip]:8080/api/command?cmd=flashlight%20toggle
 ```
 
+**Using POST (Query Parameters):**
+*Allows sending commands via POST without a request body.*
+```bash
+curl -X POST "http://[device_ip]:8080/api/command?cmd=lock%20toggle"
+```
+
 **Using POST (JSON):**
 ```bash
 curl -X POST "http://[device_ip]:8080/api/command" \

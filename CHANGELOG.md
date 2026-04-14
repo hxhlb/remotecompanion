@@ -25,10 +25,13 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - **Security First**: The Web UI toggle is now set to **OFF** by default for new installations to enhance device security.
+- **API Consistency**: The `/api/command` endpoint now supports query parameters (`?cmd=...`) for both GET and POST methods, improving compatibility with simple HTTP callers like curl.
 - **API Cleanliness**: Fixed JSON URL formatting in API responses to remove backslash escaping, resulting in clean, ready-to-use URL strings.
 - **Clipboard Reliability**: Hardened the copy-to-clipboard logic to ensure it works consistently across all browser environments, including insecure IP-based connections.
 
 ### Fixed
+- **Stability Guard**: Added nil-safety to the core command handler to prevent SpringBoard crashes (Safe Mode) when receiving invalid or malformed API requests.
+- **Settings UI**: Re-engineered the Settings panel with a modern flexbox layout, ensuring the version footer is pinned to the absolute bottom of the viewport as intended.
 - **Configuration Lockout**: Resolved an edge case where the Web UI settings could not be saved or re-enabled from the browser if the Web UI flag was turned off.
 - **Persistence Reliability**: Hardened the configuration saving mechanism in the tweak with a POSIX fallback to ensure settings are correctly written to the shared filesystem regardless of sandbox restrictions.
 - Resolved race condition in button hook long-press detection.
