@@ -271,8 +271,12 @@
       background: none; border: none; color: #007aff;
       font-size: 17px; font-family: inherit; cursor: pointer;
       padding: 8px; flex-shrink: 0;
+      transition: opacity 0.1s, transform 0.1s;
+      display: flex; align-items: center; justify-content: center;
     }
+    .panel-action:active { opacity: 0.5; transform: scale(0.92); }
     .panel-action.white { color: #fff; }
+    .panel-action i { font-size: 20px; }
 
     .panel-large-title {
       font-size: 34px; font-weight: 700; color: #fff;
@@ -555,7 +559,7 @@
       <i class="f7-icons">chevron_left</i> Triggers
     </button>
     <div class="panel-title" id="actions-panel-title"></div>
-    <button class="panel-action white" onclick="copyCurrentTriggerUrl()" title="Copy API Link" style="margin-right: -4px;">
+    <button class="panel-action white" onclick="copyCurrentTriggerUrl(this)" title="Copy API Link" style="margin-right: -4px;">
       <i class="f7-icons">doc_on_doc</i>
     </button>
     <button class="panel-action white" onclick="playCurrentTrigger()" title="Run">
@@ -1065,7 +1069,7 @@ function renderTriggerRow(key, deletable) {
   const copyBtn = document.createElement('div');
   copyBtn.className = 'swipe-action sa-copy';
   copyBtn.innerHTML = `<i class="f7-icons">doc_on_doc</i>`;
-  copyBtn.addEventListener('click', e => { e.stopPropagation(); copyTriggerUrl(key); closeOpenRow(); });
+  copyBtn.addEventListener('click', e => { e.stopPropagation(); copyTriggerUrl(key, copyBtn); closeOpenRow(); });
 
   actionsEl.appendChild(favBtn);
   actionsEl.appendChild(copyBtn);
@@ -1202,19 +1206,53 @@ async function runTrigger(key) {
   } catch(e) { showToast('⚠ Could not connect to device'); }
 }
 
-function copyTriggerUrl(key) {
+function copyTriggerUrl(key, btnEl) {
   const url = `${window.location.protocol}//${window.location.host}/api/trigger/${encodeURIComponent(key)}`;
-  navigator.clipboard.writeText(url).then(() => {
+  
+  const performCopy = (text) => {
+    // navigator.clipboard is preferred but requires secure context
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    } else {
+      // Robust fallback
+      const el = document.createElement('textarea');
+      el.value = text;
+      el.setAttribute('readonly', '');
+      el.style.position = 'absolute';
+      el.style.left = '-9999px';
+      document.body.appendChild(el);
+      const selected =
+        document.getSelection().rangeCount > 0
+          ? document.getSelection().getRangeAt(0)
+          : false;
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      if (selected) {
+        document.getSelection().removeAllRanges();
+        document.getSelection().addRange(selected);
+      }
+      return Promise.resolve();
+    }
+  };
+
+  performCopy(url).then(() => {
     showToast('✓ URL Copied');
-  }).catch(() => {
-    // Fallback for non-https/older browsers if needed
-    const el = document.createElement('textarea');
-    el.value = url;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    showToast('✓ URL Copied');
+    if (btnEl) {
+      const icon = btnEl.querySelector('i');
+      if (icon) {
+        const originalIcon = icon.innerText;
+        icon.innerText = 'checkmark';
+        btnEl.style.color = '#34c759';
+        setTimeout(() => {
+          icon.innerText = originalIcon;
+          btnEl.style.color = '';
+        }, 1500);
+      }
+    }
+  }).catch(err => {
+    console.error('Copy failed:', err);
+    showToast('⚠ Copy Failed');
   });
 }
 
@@ -1244,8 +1282,8 @@ function playCurrentTrigger() {
   if (currentKey) runTrigger(currentKey);
 }
 
-function copyCurrentTriggerUrl() {
-  if (currentKey) copyTriggerUrl(currentKey);
+function copyCurrentTriggerUrl(btn) {
+  if (currentKey) copyTriggerUrl(currentKey, btn);
 }
 
 // ── renderActionList ─────────────────────────────────────────────────────────
