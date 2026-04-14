@@ -683,6 +683,28 @@
   </div>
 </div>
 
+<div class="dialog-backdrop" id="complex-dialog-backdrop">
+  <div class="dialog-box">
+    <div class="dialog-title" id="complex-dialog-title">New Trigger</div>
+    <div class="dialog-msg" id="complex-dialog-msg">Select Device</div>
+    
+    <div style="margin: 16px 0;">
+      <div style="display:flex; background:rgba(255,255,255,0.1); border-radius:8px; overflow:hidden; margin-bottom: 12px;">
+        <div id="complex-seg-connect" onclick="setComplexSegment('connect')" style="flex:1; padding:8px; text-align:center; background:#007aff; color:#fff; font-size:14px; font-weight:500; cursor:pointer;">Connect</div>
+        <div id="complex-seg-disconnect" onclick="setComplexSegment('disconnect')" style="flex:1; padding:8px; text-align:center; color:#fff; font-size:14px; font-weight:500; cursor:pointer;">Disconnect</div>
+      </div>
+      
+      <input list="complex-dialog-datalist" class="dialog-input" id="complex-dialog-input" type="text" placeholder="Name or SSID" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <datalist id="complex-dialog-datalist"></datalist>
+    </div>
+    
+    <div class="dialog-btns">
+      <button onclick="closeComplexDialog()">Cancel</button>
+      <button id="complex-dialog-ok" onclick="complexDialogOk()">Create</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ TOAST ══════════════════════════════════════════════════════════════ -->
 <div class="toast" id="toast"></div>
 
@@ -789,7 +811,11 @@ const TRIGGER_ICONS = {
 function iconForKey(key) {
   if (TRIGGER_ICONS[key]) return TRIGGER_ICONS[key];
   if (key.startsWith('nfc_'))        return { icon:'antenna_radiowaves_left_right', cls:'icon-cyan' };
+  if (key.startsWith('wifi_connect_')) return { icon:'wifi', cls:'icon-green' };
+  if (key.startsWith('wifi_disconnect_')) return { icon:'wifi_slash', cls:'icon-orange' };
   if (key.startsWith('wifi_'))       return { icon:'wifi',                          cls:'icon-blue' };
+  if (key.startsWith('bt_connect_')) return { icon:'bolt_horizontal_fill', cls:'icon-green' };
+  if (key.startsWith('bt_disconnect_')) return { icon:'bolt_horizontal', cls:'icon-orange' };
   if (key.startsWith('bt_'))         return { icon:'bolt_horizontal_fill',          cls:'icon-indigo' };
   if (key.startsWith('app_launch_')) return { icon:'app_badge_fill',                cls:'icon-pink' };
   if (key.startsWith('notif_'))      return { icon:'bell_circle_fill',              cls:'icon-red' };
@@ -802,7 +828,11 @@ function nameForKey(key) {
   const t = config.triggers[key];
   if (t && t.name) return t.name;
   if (key.startsWith('nfc_'))        return `NFC: ${key.slice(4)}`;
+  if (key.startsWith('wifi_connect_')) return `WiFi Connect: ${key.slice(13)}`;
+  if (key.startsWith('wifi_disconnect_')) return `WiFi Disconnect: ${key.slice(16)}`;
   if (key.startsWith('wifi_'))       return `WiFi: ${key.slice(5)}`;
+  if (key.startsWith('bt_connect_')) return `BT Connect: ${key.slice(11)}`;
+  if (key.startsWith('bt_disconnect_')) return `BT Disconnect: ${key.slice(14)}`;
   if (key.startsWith('bt_'))         return `BT: ${key.slice(3)}`;
   if (key.startsWith('app_launch_')) return `Launch: ${key.slice(11)}`;
   if (key.startsWith('notif_'))      return `Notif: ${key.slice(6)}`;
@@ -1577,8 +1607,8 @@ function showConditionPicker() {
 function showAddTriggerSheet() {
   showSheet('New Trigger', [
     { label:'NFC Tag',           action:() => promptNewTrigger('nfc',        'NFC tag ID or name') },
-    { label:'WiFi Network',      action:() => promptNewTrigger('wifi',       'Network SSID') },
-    { label:'Bluetooth Device',  action:() => promptNewTrigger('bt',         'Device name') },
+    { label:'WiFi Network',      action:() => promptComplexTrigger('wifi') },
+    { label:'Bluetooth Device',  action:() => promptComplexTrigger('bt') },
     { label:'App Launch',        action:() => promptNewTrigger('app_launch', 'Bundle ID (e.g. com.apple.Music)') },
     { label:'Notification',      action:() => promptNewTrigger('notif',      'App bundle ID') },
     { label:'Scheduled',         action:() => promptNewTrigger('sched',      'Trigger name (e.g. morning)') },
@@ -1588,10 +1618,74 @@ function showAddTriggerSheet() {
 function promptNewTrigger(prefix, placeholder) {
   showDialog('New Trigger', placeholder + ':', '', 'Create', val => {
     if (!val) return;
-    const key = `${prefix}_${val.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'')}`;
+    const key = `${prefix}_${val.toLowerCase().replace(/[ \t\n\r]+/g,'_').replace(/[^a-z0-9_]/g,'')}`;
     config.triggers[key] = { enabled: true, actions: [], name: val };
     saveConfig(); renderAll();
   });
+}
+
+// ── Complex Trigger (WiFi/BT) ────────────────────────────────────────────────
+let complexTriggerType = null;
+let complexTriggerSegment = 'connect';
+
+async function fetchDevices() {
+  try {
+    const res = await fetch('/api/devices');
+    return await res.json();
+  } catch (e) {
+    return { wifi: [], bluetooth: [] };
+  }
+}
+
+function setComplexSegment(seg) {
+  complexTriggerSegment = seg;
+  document.getElementById('complex-seg-connect').style.background = seg === 'connect' ? '#007aff' : 'transparent';
+  document.getElementById('complex-seg-disconnect').style.background = seg === 'disconnect' ? '#007aff' : 'transparent';
+}
+
+async function promptComplexTrigger(type) {
+  complexTriggerType = type;
+  setComplexSegment('connect');
+  document.getElementById('complex-dialog-title').textContent = type === 'wifi' ? 'New WiFi Trigger' : 'New Bluetooth Trigger';
+  document.getElementById('complex-dialog-msg').textContent = type === 'wifi' ? 'Select or type Network SSID' : 'Select or type Device Name';
+  document.getElementById('complex-dialog-input').value = '';
+  document.getElementById('complex-dialog-input').placeholder = type === 'wifi' ? 'Network SSID' : 'Device Name';
+  
+  const datalist = document.getElementById('complex-dialog-datalist');
+  datalist.innerHTML = '';
+  document.getElementById('complex-dialog-backdrop').classList.add('visible');
+
+  // Fetch API
+  const devices = await fetchDevices();
+  const list = type === 'wifi' ? devices.wifi : devices.bluetooth;
+  if (list && list.length) {
+    list.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      datalist.appendChild(opt);
+    });
+  }
+}
+
+function closeComplexDialog() {
+  document.getElementById('complex-dialog-backdrop').classList.remove('visible');
+}
+
+function complexDialogOk() {
+  const val = document.getElementById('complex-dialog-input').value.trim();
+  if (!val) {
+    closeComplexDialog();
+    return;
+  }
+  closeComplexDialog();
+  
+  // The backend uses literal trigger keys such as wifi_connect_My Home Network
+  // DO NOT transform or strip spaces since the event observer uses the literal phrase!
+  const prefix = complexTriggerType; 
+  const key = `${prefix}_${complexTriggerSegment}_${val}`;
+  
+  config.triggers[key] = { enabled: true, actions: [], name: val };
+  saveConfig(); renderAll();
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────

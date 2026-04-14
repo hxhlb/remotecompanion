@@ -4107,6 +4107,47 @@ static void start_web_server() {
                                     jsonStr = [jsonStr stringByReplacingOccurrencesOfString:@"\\/" withString:@"/"];
                                     responseString = [NSString stringWithFormat:@"HTTP/1.1 200 OK\r\n%@Content-Type: application/json\r\nContent-Length: %lu\r\n\r\n%@", cors, (unsigned long)[jsonStr lengthOfBytesUsingEncoding:NSUTF8StringEncoding], jsonStr];
                                 }
+                            } else if ([path isEqualToString:@"/api/devices"] && [method isEqualToString:@"GET"]) {
+                                load_trigger_config();
+                                if (![g_triggerConfig[@"webUIEnabled"] boolValue]) {
+                                    responseString = [NSString stringWithFormat:@"HTTP/1.1 403 Forbidden\r\n%@Content-Length: 17\r\n\r\nWeb UI is disabled", cors];
+                                } else {
+                                    NSMutableArray *btNames = [NSMutableArray array];
+                                    void *btHandle = dlopen("/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager", RTLD_NOW);
+                                    if (btHandle) {
+                                        Class BluetoothManagerClass = objc_getClass("BluetoothManager");
+                                        if (BluetoothManagerClass) {
+                                            BluetoothManager *btManager = [BluetoothManagerClass sharedInstance];
+                                            NSArray *devices = [btManager pairedDevices];
+                                            for (id device in devices) {
+                                                if ([device respondsToSelector:@selector(name)]) {
+                                                    NSString *name = [device name];
+                                                    if (name && name.length > 0) {
+                                                        [btNames addObject:name];
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    NSMutableArray *wifiNames = [NSMutableArray array];
+                                    SBWiFiManager *manager = [objc_getClass("SBWiFiManager") sharedInstance];
+                                    if ([manager respondsToSelector:@selector(currentNetworkName)]) {
+                                        NSString *ssid = [manager currentNetworkName];
+                                        if (ssid && ssid.length > 0) {
+                                            [wifiNames addObject:ssid];
+                                        }
+                                    }
+                                    
+                                    NSDictionary *resp = @{
+                                        @"ok": @YES,
+                                        @"bluetooth": btNames,
+                                        @"wifi": wifiNames
+                                    };
+                                    NSData *respData = [NSJSONSerialization dataWithJSONObject:resp options:0 error:nil];
+                                    NSString *jsonStr = [[NSString alloc] initWithData:respData encoding:NSUTF8StringEncoding];
+                                    responseString = [NSString stringWithFormat:@"HTTP/1.1 200 OK\r\n%@Content-Type: application/json\r\nContent-Length: %lu\r\n\r\n%@", cors, (unsigned long)[jsonStr lengthOfBytesUsingEncoding:NSUTF8StringEncoding], jsonStr];
+                                }
                             } else if ([path isEqualToString:@"/api/commands"] && [method isEqualToString:@"GET"]) {
                                 NSArray *commandList = @[
                                     // System Controls
