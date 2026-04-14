@@ -4138,6 +4138,8 @@ static void start_web_server() {
                                 NSDictionary *resp = @{@"ok": @YES, @"commands": commandList};
                                 NSData *respData = [NSJSONSerialization dataWithJSONObject:resp options:NSJSONWritingPrettyPrinted error:nil];
                                 NSString *jsonStr = [[NSString alloc] initWithData:respData encoding:NSUTF8StringEncoding];
+                                // Remove backslash escaping for forward slashes
+                                jsonStr = [jsonStr stringByReplacingOccurrencesOfString:@"\\/" withString:@"/"];
                                 responseString = [NSString stringWithFormat:@"HTTP/1.1 200 OK\r\n%@Content-Type: application/json\r\nContent-Length: %lu\r\n\r\n%@", cors, (unsigned long)[jsonStr lengthOfBytesUsingEncoding:NSUTF8StringEncoding], jsonStr];
                             } else if ([path hasPrefix:@"/api/command"]) {
                                 load_trigger_config();
