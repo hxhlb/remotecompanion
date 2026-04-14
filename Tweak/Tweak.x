@@ -2490,23 +2490,6 @@ static NSString *handle_command(NSString *cmd) {
         });
         SRLog(@"App Switcher toggle final success: %d", success);
         return success ? @"Switcher toggled\n" : @"Failed to toggle switcher\n";
-    } else if ([cleanCmd isEqualToString:@"is-locked"]) {
-        // Query lock state
-        // Use dispatch_sync to wait for result from main thread
-        __block NSString *result = @"error";
-        dispatch_sync(dispatch_get_main_queue(), ^{
-            Class SBLockScreenManagerClass = objc_getClass("SBLockScreenManager");
-            SBLockScreenManager *manager = nil;
-            if (SBLockScreenManagerClass) {
-                manager = [SBLockScreenManagerClass sharedInstance];
-            }
-            
-            if (manager && [manager respondsToSelector:@selector(isUILocked)]) {
-                 BOOL locked = [manager isUILocked];
-                 result = locked ? @"locked" : @"unlocked";
-            }
-        });
-        return [NSString stringWithFormat:@"%@\n", result];
     } else if ([cleanCmd hasPrefix:@"unlock "]) {
         NSString *passcode = [[cleanCmd substringFromIndex:7] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -2590,46 +2573,6 @@ static NSString *handle_command(NSString *cmd) {
             }
         }
         return @"Call initiated. Check logs.\n";
-    } else if ([cleanCmd isEqualToString:@"lock status"]) {
-        __block NSString *result = @"error";
-        dispatch_sync(dispatch_get_main_queue(), ^{
-            Class SBLockScreenManagerClass = objc_getClass("SBLockScreenManager");
-            SBLockScreenManager *manager = nil;
-            if (SBLockScreenManagerClass) {
-                manager = [SBLockScreenManagerClass sharedInstance];
-            }
-            if (manager && [manager respondsToSelector:@selector(isUILocked)]) {
-                 BOOL locked = [manager isUILocked];
-                 result = locked ? @"locked" : @"unlocked";
-            }
-        });
-        return [NSString stringWithFormat:@"%@\n", result];
-    } else if ([cleanCmd isEqualToString:@"orientation"] || [cleanCmd isEqualToString:@"orientation status"]) {
-        __block NSString *res = @"UNKNOWN";
-        dispatch_sync(dispatch_get_main_queue(), ^{
-            SpringBoard *sb = (SpringBoard *)[UIApplication sharedApplication];
-            UIInterfaceOrientation orientation = UIInterfaceOrientationPortrait;
-            if ([sb respondsToSelector:@selector(activeInterfaceOrientation)]) {
-                orientation = [sb activeInterfaceOrientation];
-            } else {
-                #pragma clang diagnostic push
-                #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-                UIWindow *window = sb.keyWindow ?: [[UIApplication sharedApplication].windows firstObject];
-                if (window && window.windowScene) {
-                    orientation = window.windowScene.interfaceOrientation;
-                } else {
-                    orientation = sb.statusBarOrientation;
-                }
-                #pragma clang diagnostic pop
-            }
-
-            if (UIInterfaceOrientationIsPortrait(orientation)) {
-                res = @"Portrait";
-            } else if (UIInterfaceOrientationIsLandscape(orientation)) {
-                res = @"Landscape";
-            }
-        });
-        return [NSString stringWithFormat:@"%@\n", res];
     } else if ([cleanCmd isEqualToString:@"lock"]) {
         // Smart lock: Only lock if currently unlocked
         // ensure we run on main thread for UI/SB checks
@@ -4122,29 +4065,44 @@ static void start_web_server() {
                                 }
                             } else if ([path isEqualToString:@"/api/commands"] && [method isEqualToString:@"GET"]) {
                                 NSArray *commandList = @[
-                                    @{@"command": @"play", @"desc": @"Media: Play content"},
-                                    @{@"command": @"pause", @"desc": @"Media: Pause content"},
-                                    @{@"command": @"next", @"desc": @"Media: Skip to next track"},
-                                    @{@"command": @"prev", @"desc": @"Media: Go to previous track"},
-                                    @{@"command": @"vol-up", @"desc": @"Volume: Increase volume"},
-                                    @{@"command": @"vol-down", @"desc": @"Volume: Decrease volume"},
-                                    @{@"command": @"set-vol <0-100>", @"desc": @"Volume: Set volume level"},
-                                    @{@"command": @"brightness <0-100>", @"desc": @"Display: Set screen brightness"},
-                                    @{@"command": @"flashlight <1-100>", @"desc": @"Flashlight: Toggle on/off or set intensity"},
-                                    @{@"command": @"respring", @"desc": @"System: Restart SpringBoard"},
-                                    @{@"command": @"ldrestart", @"desc": @"System: Soft-reboot device"},
-                                    @{@"command": @"uicache", @"desc": @"System: Refresh application cache"},
-                                    @{@"command": @"home", @"desc": @"System: Simulate Home button press"},
+                                    // System Controls
+                                    @{@"command": @"lock", @"desc": @"System: Lock the device screen"},
+                                    @{@"command": @"unlock <passcode>", @"desc": @"Security: Unlock device screen (INSECURE: Passcode sent in plain text!)"},
+                                    @{@"command": @"home", @"desc": @"System: Simulate a Home Button press"},
                                     @{@"command": @"screenshot", @"desc": @"System: Take a screenshot"},
-                                    @{@"command": @"rotate lock/unlock", @"desc": @"System: Toggle orientation lock"},
+                                    @{@"command": @"open control center", @"desc": @"System: Open Control Center"},
+                                    @{@"command": @"app switcher", @"desc": @"System: Open App Switcher"},
+                                    @{@"command": @"open <bundleId>", @"desc": @"System: Launch an application by bundle identifier"},
+                                    @{@"command": @"kill <bundleId>", @"desc": @"System: Force-close an application"},
+                                    @{@"command": @"respring", @"desc": @"System: Restart SpringBoard"},
+                                    @{@"command": @"ldrestart", @"desc": @"System: Soft-reboot the device"},
+
+                                    // Media & Volume
+                                    @{@"command": @"play", @"desc": @"Media: Start playback"},
+                                    @{@"command": @"pause", @"desc": @"Media: Pause playback"},
+                                    @{@"command": @"next", @"desc": @"Media: Skip to next track"},
+                                    @{@"command": @"prev", @"desc": @"Media: Skip to previous track"},
+                                    @{@"command": @"toggle", @"desc": @"Media: Toggle play/pause"},
+                                    @{@"command": @"vol up", @"desc": @"Media: Increase volume"},
+                                    @{@"command": @"vol down", @"desc": @"Media: Decrease volume"},
+                                    @{@"command": @"volume <0-100>", @"desc": @"Media: Set volume to specific percentage"},
+
+                                    // Hardware Toggles
+                                    @{@"command": @"flashlight toggle", @"desc": @"Toggles: Toggle flashlight state"},
+                                    @{@"command": @"flashlight <1-100>", @"desc": @"Toggles: Set flashlight brightness intensity"},
+                                    @{@"command": @"brightness <0-100>", @"desc": @"Toggles: Set screen brightness percentage"},
                                     @{@"command": @"bt on/off", @"desc": @"Toggles: Bluetooth power"},
                                     @{@"command": @"wifi on/off", @"desc": @"Toggles: WiFi power"},
                                     @{@"command": @"airplane on/off", @"desc": @"Toggles: Airplane Mode power"},
                                     @{@"command": @"dnd on/off", @"desc": @"Toggles: Do Not Disturb Mode"},
+                                    @{@"command": @"low power on/off", @"desc": @"Toggles: Low Power Mode"},
+                                    @{@"command": @"mute", @"desc": @"Toggles: System mute/silent mode"},
+                                    @{@"command": @"rotate lock/unlock", @"desc": @"Toggles: Orientation lock state"},
+                                    @{@"command": @"haptic", @"desc": @"System: Play a subtle haptic feedback vibe"},
+
+                                    // Automations & Discovery
                                     @{@"command": @"shortcut \"Name\"", @"desc": @"Automation: Run a Siri Shortcut"},
                                     @{@"command": @"trigger <ID>", @"desc": @"Automation: Fire a configured RemoteCompanion trigger"},
-                                    @{@"command": @"unlock <passcode>", @"desc": @"Security: Unlock device screen (INSECURE: Passcode sent in plain text!)"},
-                                    @{@"command": @"is-locked", @"desc": @"System: Check if device screen is currently locked"},
                                     @{@"command": @"list-triggers", @"desc": @"Discovery: Returns a plain-text list of configured automations"}
                                 ];
                                 NSDictionary *resp = @{@"ok": @YES, @"commands": commandList};
