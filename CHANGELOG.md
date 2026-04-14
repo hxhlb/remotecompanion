@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [3.0.0] - 2026-04-14
 
 ### Added
-- **Automations API (v2)**: Introduced structured discovery endpoints at `GET /api/triggers` and `GET /api/commands`. These return clean JSON for effortless integration with external services like Home Assistant or Node-RED.
+- **Automations API**: Introduced structured discovery endpoints at `GET /api/triggers` and `GET /api/commands`. These return clean JSON for effortless integration with external services like Home Assistant or Node-RED.
 - **Web UI "Copy API Link"**: 
   - Added a new **Copy** action to the trigger list (swipe) and the Actions Panel navbar.
   - Instantly copy a trigger's direct execution URL (including device IP) for easy integration with Shortcuts, Home Assistant, or CLI scripts.
@@ -17,7 +17,7 @@ All notable changes to this project will be documented in this file.
 - **App Launch Trigger**: Fire actions when specific applications are opened.
 - **Wait Action**: Added "Delay" action to pause sequence execution.
 - **Native Shortcut Support**: High-performance execution of Siri Shortcuts via WorkflowKit.
-- **Refactored Web UI**: Completely redesigned the web interface to match the iOS app's premium "Inset Grouped" aesthetic. 
+- **Premium Web UI**: A completely new, desktop-class automation hub matching the iOS app's "Inset Grouped" aesthetic. 
   - **Premium Design**: Modern iOS-consistent look with glassmorphism on the navigation bar, SF Symbols-style iconography, and high-contrast dark mode.
   - **Full Automation Management**: Creating, renaming, and deleting dynamic triggers is now fully supported from the browser.
   - **Advanced Action Editor**: A powerful new sequence editor with reorderable actions, support for logic blocks (`If/Else/End`), and inline value editing.
