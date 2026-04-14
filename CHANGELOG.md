@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
   - Added an interactive **Green Checkmark** success indicator and tactile "push" animations when a URL is copied.
 - **Scheduled Triggers**: Run action sequences at specific times of the day and on specific days of the week. Perfect for daily cleanups, automated system checks, or time-based alerts.
 - **Notification Triggers**: Bind actions to incoming notifications from any app. Filter by bundle ID or specific text within the notification (title/subtitle/message).
-- **Flashlight Intensity Control**: The `rc flashlight` command now supports values from 1-100 to set the brightness level of the device torch (e.g., `rc flashlight 50`).
+- **Flashlight Intensity Control**: The `rc flashlight` command now supports values from 1-100 for fine-tuned intensity of the device torch (e.g., `rc flashlight 50`).
 - **Motion Gestures**: Support for "Shake Device" handler.
 - **App Launch Trigger**: Fire actions when specific applications are opened.
 - **Wait Action**: Added "Delay" action to pause sequence execution.
