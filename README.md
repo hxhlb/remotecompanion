@@ -37,7 +37,7 @@ RemoteCompanion provides fast, scriptable system control for modern rootless jai
 
 ## Web UI & Automations Hub
 
-RemoteCompanion v3.0 introduces a premium, desktop-class Web UI designed to mirror the native iOS experience while providing the speed and convenience of a desktop environment.
+RemoteCompanion v3.0 introduces a desktop-class Web UI designed to mirror the native iOS experience while providing the speed and convenience of a desktop environment.
 
 - **Location**: Access it at `http://[DEVICE_IP]:8080` from any computer or tablet on your local network.
 - **Enable**: Toggle **Web UI** in the RemoteCompanion Settings (Gear icon) or use the command `rc webui on`.
@@ -135,7 +135,11 @@ Combine status queries with actions for smart automation:
 
 ### System & Diagnostics
 - `rc uicache` - Refresh the icon cache.
+- `rc respring` - Restart SpringBoard.
+- `rc ldrestart` - Soft-reboot the device.
+- `rc userspace-reboot` - Restart userspace.
 - `rc webui [on|off|status]` - Enable, disable, or check the status of the Web UI server.
+
 
 <details>
 <summary><h3>Lua Scripting & Objective-C Bridge</h3></summary>
