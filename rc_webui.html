@@ -555,6 +555,9 @@
       <i class="f7-icons">chevron_left</i> Triggers
     </button>
     <div class="panel-title" id="actions-panel-title"></div>
+    <button class="panel-action white" onclick="copyCurrentTriggerUrl()" title="Copy API Link" style="margin-right: -4px;">
+      <i class="f7-icons">doc_on_doc</i>
+    </button>
     <button class="panel-action white" onclick="playCurrentTrigger()" title="Run">
       <i class="f7-icons">play_fill</i>
     </button>
@@ -1239,6 +1242,10 @@ function onTriggerEnabledChange() {
 
 function playCurrentTrigger() {
   if (currentKey) runTrigger(currentKey);
+}
+
+function copyCurrentTriggerUrl() {
+  if (currentKey) copyTriggerUrl(currentKey);
 }
 
 // ── renderActionList ─────────────────────────────────────────────────────────
