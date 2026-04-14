@@ -444,13 +444,14 @@
     }
     .sheet-backdrop.visible { display: block; }
     .sheet {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 801;
+      position: fixed; bottom: 0; left: 50%; z-index: 801;
+      width: calc(100% - 48px); max-width: 560px;
       padding-bottom: env(safe-area-inset-bottom, 20px);
-      transform: translateY(100%);
+      transform: translateX(-50%) translateY(100%);
       transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
     }
-    .sheet.open { transform: translateY(0); }
-    .sheet-main { background: #1c1c1e; border-radius: 16px 16px 0 0; overflow: hidden; }
+    .sheet.open { transform: translateX(-50%) translateY(0); }
+    .sheet-main { background: #1c1c1e; border-radius: 14px; overflow: hidden; }
     .sheet-title {
       font-size: 13px; color: #8e8e93; font-weight: 600;
       text-transform: uppercase; letter-spacing: 0.05em;
@@ -466,10 +467,10 @@
     .sheet-btn:first-of-type { border-top: none; }
     .sheet-btn.destructive { color: #ff3b30; }
     .sheet-cancel {
-      margin: 8px 16px 12px;
+      margin: 8px 0 12px;
       background: #2c2c2e; border-radius: 12px; border: none;
       color: #007aff; font-size: 17px; font-weight: 600;
-      font-family: inherit; padding: 15px; width: calc(100% - 32px);
+      font-family: inherit; padding: 15px; width: 100%;
       text-align: center; cursor: pointer;
     }
 
