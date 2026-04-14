@@ -2395,7 +2395,7 @@ static NSString *handle_command(NSString *cmd) {
                [cleanCmd isEqualToString:@"open-control-center"] ||
                [cleanCmd isEqualToString:@"control-center"]) {
         __block BOOL opened = NO;
-        dispatch_sync(dispatch_get_main_queue(), ^{
+        void (^ccBlock)(void) = ^{
             Class ccClass = objc_getClass("SBControlCenterController");
             if (!ccClass) {
                 SRLog(@"Control Center class unavailable");
@@ -2409,41 +2409,31 @@ static NSString *handle_command(NSString *cmd) {
                 controller = [ccClass performSelector:@selector(sharedInstanceIfExists)];
 #pragma clang diagnostic pop
             }
-            if (!controller && [ccClass respondsToSelector:@selector(sharedInstance)]) {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-                controller = [ccClass performSelector:@selector(sharedInstance)];
-#pragma clang diagnostic pop
-            }
-            if (!controller) {
-                SRLog(@"Control Center controller unavailable");
-                return;
-            }
 
-            BOOL isVisible = NO;
-            if ([controller respondsToSelector:@selector(isVisible)]) {
-                isVisible = [controller isVisible];
+            if (controller && [controller respondsToSelector:@selector(isVisible)]) {
+                if ([controller isVisible]) {
+                    [controller dismissAnimated:YES];
+                    opened = YES;
+                } else {
+                    [controller presentAnimated:YES];
+                    opened = YES;
+                }
+            } else if (controller && [controller respondsToSelector:@selector(_presentControlCenterGestureBeganWithReason:)]) {
+                 [controller performSelector:@selector(_presentControlCenterGestureBeganWithReason:) withObject:@"RemoteCompanion"];
+                 opened = YES;
             }
-            if (isVisible) {
-                opened = YES;
-                return;
-            }
+        };
 
-            if ([controller respondsToSelector:@selector(presentAnimated:completion:)]) {
-                [controller presentAnimated:YES completion:nil];
-                opened = YES;
-            } else if ([controller respondsToSelector:@selector(presentAnimated:)]) {
-                [controller presentAnimated:YES];
-                opened = YES;
-            } else {
-                SRLog(@"No supported Control Center present selector");
-            }
-        });
+        if ([NSThread isMainThread]) {
+            ccBlock();
+        } else {
+            dispatch_sync(dispatch_get_main_queue(), ccBlock);
+        }
         return opened ? @"Control Center opened\n" : @"Failed to open Control Center\n";
     } else if ([cleanCmd isEqualToString:@"switcher"] || [cleanCmd isEqualToString:@"app switcher"]) {
         __block BOOL success = NO;
         SRLog(@"Attempting to toggle App Switcher...");
-        dispatch_sync(dispatch_get_main_queue(), ^{
+        void (^switcherBlock)(void) = ^{
             Class SBClass = objc_getClass("SpringBoard");
             id sb = [SBClass sharedApplication];
             
@@ -2454,40 +2444,42 @@ static NSString *handle_command(NSString *cmd) {
                 if ([viewCtrlClass respondsToSelector:@selector(sharedInstance)]) {
                     switcher = [viewCtrlClass sharedInstance];
                 }
-                if (switcher) {
-                    if ([switcher respondsToSelector:@selector(toggleMainSwitcherNoninteractivelyWithSource:animated:)]) {
-                        SRLog(@"Using Method 1c: toggleMainSwitcherNoninteractivelyWithSource:animated:");
-                        ((void (*)(id, SEL, long long, BOOL))objc_msgSend)(switcher, @selector(toggleMainSwitcherNoninteractivelyWithSource:animated:), 1, YES);
-                        success = YES;
-                    } else if ([switcher respondsToSelector:@selector(activateMainSwitcherNoninteractivelyWithSource:animated:)]) {
-                        SRLog(@"Using Method 1d: activateMainSwitcherNoninteractivelyWithSource:animated:");
-                        ((void (*)(id, SEL, long long, BOOL))objc_msgSend)(switcher, @selector(activateMainSwitcherNoninteractivelyWithSource:animated:), 1, YES);
-                        success = YES;
-                    } else if ([switcher respondsToSelector:@selector(toggleSwitcherNoninteractively)]) {
-                        SRLog(@"Using Method 1a: toggleSwitcherNoninteractively");
-                        [switcher performSelector:@selector(toggleSwitcherNoninteractively)];
-                        success = YES;
-                    }
-                }
-            }
-            
-            // Method 2: SBUIController handleHomeButtonDoublePressDown
-            if (!success) {
-                id uiCtrl = [objc_getClass("SBUIController") sharedInstance];
-                if ([uiCtrl respondsToSelector:@selector(handleHomeButtonDoublePressDown)]) {
-                    SRLog(@"Using Method 2: SBUIController handleHomeButtonDoublePressDown");
-                    [uiCtrl performSelector:@selector(handleHomeButtonDoublePressDown)];
+                if (switcher && [switcher respondsToSelector:@selector(toggleSwitcher)]) {
+                    [switcher performSelector:@selector(toggleSwitcher)];
                     success = YES;
                 }
             }
+            
+            // Method 2: SBLockScreenManager (if on lockscreen)
+            if (!success) {
+                Class LSMClass = objc_getClass("SBLockScreenManager");
+                if (LSMClass) {
+                    id manager = [LSMClass sharedInstance];
+                    if (manager && [manager respondsToSelector:@selector(isUILocked)] && [manager isUILocked]) {
+                        SRLog(@"Device locked, cannot toggle switcher");
+                    }
+                }
+            }
 
-            // Method 3: Accessibility
+            // Method 3: Standard springboard toggle if available
+            if (!success && [sb respondsToSelector:@selector(_toggleAppSwitcher)]) {
+                [sb performSelector:@selector(_toggleAppSwitcher)];
+                success = YES;
+            }
+            
+            // Method 4: Accessibility
             if (!success && [sb respondsToSelector:@selector(_accessibilityHandleAppSwitcherEvent)]) {
-                SRLog(@"Using Method 3: _accessibilityHandleAppSwitcherEvent");
+                SRLog(@"Using Method 4: _accessibilityHandleAppSwitcherEvent");
                 [sb _accessibilityHandleAppSwitcherEvent];
                 success = YES;
             }
-        });
+        };
+
+        if ([NSThread isMainThread]) {
+            switcherBlock();
+        } else {
+            dispatch_sync(dispatch_get_main_queue(), switcherBlock);
+        }
         SRLog(@"App Switcher toggle final success: %d", success);
         return success ? @"Switcher toggled\n" : @"Failed to toggle switcher\n";
     } else if ([cleanCmd hasPrefix:@"unlock "]) {
@@ -2606,52 +2598,45 @@ static NSString *handle_command(NSString *cmd) {
         
         SRLog(@"[SmartUnlock] Checking lock state before unlocking...");
         
-        __block BOOL isLocked = NO;
-        dispatch_sync(dispatch_get_main_queue(), ^{
-            Class SBLockScreenManagerClass = objc_getClass("SBLockScreenManager");
-            SBLockScreenManager *manager = nil;
-            if (SBLockScreenManagerClass) {
-                manager = [SBLockScreenManagerClass sharedInstance];
-            }
-            if (manager && [manager respondsToSelector:@selector(isUILocked)]) {
-                 isLocked = [manager isUILocked];
-            }
-        });
-
-        if (!isLocked) {
-             SRLog(@"[SmartUnlock] Device already unlocked. Doing nothing.");
-             return @"already_unlocked\n";
-        }
-        
-        SRLog(@"[SmartUnlock] Device is locked. Proceeding with unlock sequence...");
-
-        // Default PIN is 2569, can be overridden with: unlock 1234
         NSString *pin = @"2569";
         if ([cleanCmd hasPrefix:@"unlock "]) {
             pin = [[cleanCmd substringFromIndex:7] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         }
         
-        // Ensure screen is on (wake)
-        inject_hid_event(kHIDPage_Consumer, kHIDUsage_Csmr_Power, 0, 0);
-        
-        // Wait for screen to wake/process (0.3s delay - increased for reliability)
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            // Get lock screen manager
+        dispatch_async(dispatch_get_main_queue(), ^{
             Class SBLockScreenManagerClass = objc_getClass("SBLockScreenManager");
-            if (!SBLockScreenManagerClass) return;
-            
-            SBLockScreenManager *manager = [SBLockScreenManagerClass sharedInstance];
-            if (!manager) return;
-            
-            // Try the direct unlock method
-            if ([manager respondsToSelector:@selector(attemptUnlockWithPasscode:)]) {
-                SRLog(@"Trying attemptUnlockWithPasscode...");
-                [manager attemptUnlockWithPasscode:pin];
-                SRLog(@"attemptUnlockWithPasscode called");
-            } else if ([manager respondsToSelector:@selector(unlockUIFromSource:withOptions:)]) {
-                 SRLog(@"Using fallback unlockUIFromSource...");
-                 [manager unlockUIFromSource:0 withOptions:nil];
+            SBLockScreenManager *manager = nil;
+            if (SBLockScreenManagerClass) {
+                manager = [SBLockScreenManagerClass sharedInstance];
             }
+            BOOL isLocked = NO;
+            if (manager && [manager respondsToSelector:@selector(isUILocked)]) {
+                 isLocked = [manager isUILocked];
+            }
+            
+            if (!isLocked) {
+                 SRLog(@"[SmartUnlock] Device already unlocked. Doing nothing.");
+                 return;
+            }
+            
+            SRLog(@"[SmartUnlock] Device is locked. Proceeding with unlock sequence...");
+
+            // Ensure screen is on (wake)
+            inject_hid_event(kHIDPage_Consumer, kHIDUsage_Csmr_Power, 0, 0);
+            
+            // Wait for screen to wake/process (0.3s delay - increased for reliability)
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                if (!manager) return;
+                // Try the direct unlock method
+                if ([manager respondsToSelector:@selector(attemptUnlockWithPasscode:)]) {
+                    SRLog(@"Trying attemptUnlockWithPasscode...");
+                    [manager attemptUnlockWithPasscode:pin];
+                    SRLog(@"attemptUnlockWithPasscode called");
+                } else if ([manager respondsToSelector:@selector(unlockUIFromSource:withOptions:)]) {
+                     SRLog(@"Using fallback unlockUIFromSource...");
+                     [manager unlockUIFromSource:0 withOptions:nil];
+                }
+            });
         });
         return @"unlocking_started\n";
     }
@@ -2677,78 +2662,74 @@ static NSString *handle_command(NSString *cmd) {
 
     } else if ([cleanCmd isEqualToString:@"lock-toggle"] || [cleanCmd isEqualToString:@"lock toggle"]) {
         // Toggle Lock State
-        __block BOOL isLocked = NO;
-        dispatch_sync(dispatch_get_main_queue(), ^{
+        dispatch_async(dispatch_get_main_queue(), ^{
             Class SBLockScreenManagerClass = objc_getClass("SBLockScreenManager");
             SBLockScreenManager *manager = nil;
             if (SBLockScreenManagerClass) {
                 manager = [SBLockScreenManagerClass sharedInstance];
             }
+            BOOL isLocked = NO;
             if (manager && [manager respondsToSelector:@selector(isUILocked)]) {
                 isLocked = [manager isUILocked];
             }
+            
+            SRLog(@"[LockToggle] Current State: %@", isLocked ? @"Locked" : @"Unlocked");
+            
+            if (isLocked) {
+                 dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                     handle_command(@"unlock");
+                 });
+            } else {
+                 dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                     handle_command(@"lock");
+                 });
+            }
         });
         
-        SRLog(@"[LockToggle] Current State: %@", isLocked ? @"Locked" : @"Unlocked");
-        
-        if (isLocked) {
-             // Unlock Logic
-             return handle_command(@"unlock");
-        } else {
-             // Lock Logic
-             return handle_command(@"lock");
-        }
+        return @"lock_toggle_initiated\n";
 
     } else if ([cleanCmd hasPrefix:@"url "]) {
         NSString *urlString = [cleanCmd substringFromIndex:4];
         urlString = [urlString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
         
-        __block BOOL isLocked = NO;
-        dispatch_sync(dispatch_get_main_queue(), ^{
+        dispatch_async(dispatch_get_main_queue(), ^{
             Class SBLockScreenManagerClass = objc_getClass("SBLockScreenManager");
             SBLockScreenManager *manager = nil;
             if (SBLockScreenManagerClass) {
                 manager = [SBLockScreenManagerClass sharedInstance];
             }
+            BOOL isLocked = NO;
             if (manager && [manager respondsToSelector:@selector(isUILocked)]) {
                 isLocked = [manager isUILocked];
             }
-        });
-        
-        if (isLocked) {
-             SRLog(@"[SmartURL] Device locked. Initiating unlock sequence for URL...");
-             
-             // 1. Wake Screen
-             inject_hid_event(kHIDPage_Consumer, kHIDUsage_Csmr_Power, 0, 0);
-             
-             // 2. Wait 0.5s then Unlock AND Open URL
-             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                 Class SBLockScreenManagerClass = objc_getClass("SBLockScreenManager");
-                 if (SBLockScreenManagerClass) {
-                     SBLockScreenManager *manager = [SBLockScreenManagerClass sharedInstance];
+            
+            if (isLocked) {
+                 SRLog(@"[SmartURL] Device locked. Initiating unlock sequence for URL...");
+                 
+                 // 1. Wake Screen
+                 inject_hid_event(kHIDPage_Consumer, kHIDUsage_Csmr_Power, 0, 0);
+                 
+                 // 2. Wait 0.5s then Unlock AND Open URL
+                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                      if (manager && [manager respondsToSelector:@selector(attemptUnlockWithPasscode:)]) {
                          [manager attemptUnlockWithPasscode:@"2569"];
                      }
-                 }
-                 
-                 // Open URL immediately after unlock attempt
+                     
+                     // Open URL immediately after unlock attempt
+                     NSURL *url = [NSURL URLWithString:urlString];
+                     if (url) {
+                         [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+                     }
+                 });
+            } else {
+                 // Device unlocked, open immediately
                  NSURL *url = [NSURL URLWithString:urlString];
                  if (url) {
                      [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
                  }
-             });
-             
-             return @"unlocking_and_opening_url\n";
-        } else {
-             // Device unlocked, open immediately
-             dispatch_async(dispatch_get_main_queue(), ^{
-                 NSURL *url = [NSURL URLWithString:urlString];
-                 if (url) {
-                     [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
-                 }
-             });
-             return @"opening_url\n";
-        }
+            }
+        });
+        return @"url_opening_initiated\n";
     } else if ([cleanCmd hasPrefix:@"spotify playlist "] || 
                [cleanCmd hasPrefix:@"spotify album "] || 
                [cleanCmd hasPrefix:@"spotify artist "] || 
