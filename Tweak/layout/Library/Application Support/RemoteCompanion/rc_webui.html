@@ -162,11 +162,12 @@
     .swipe-action i { pointer-events: none; }
     .sa-fav  { background: #f2c350; }
     .sa-play { background: #34c759; }
+    .sa-copy { background: #5ac8fa; }
     .sa-del  { background: #ff3b30; }
 
     /* Row revealed state */
-    .trigger-row.swiped-open .trigger-row-inner {
-      transform: translateX(-180px);
+    .trigger_row.swiped-open .trigger-row-inner {
+      transform: translateX(-240px); /* fallback, now dynamic in JS */
     }
     .trigger-row.swiped-open .swipe-action { width: 60px; }
 
@@ -1058,7 +1059,13 @@ function renderTriggerRow(key, deletable) {
   playBtn.innerHTML = `<i class="f7-icons">play_fill</i>`;
   playBtn.addEventListener('click', e => { e.stopPropagation(); runTrigger(key); closeOpenRow(); });
 
+  const copyBtn = document.createElement('div');
+  copyBtn.className = 'swipe-action sa-copy';
+  copyBtn.innerHTML = `<i class="f7-icons">doc_on_doc</i>`;
+  copyBtn.addEventListener('click', e => { e.stopPropagation(); copyTriggerUrl(key); closeOpenRow(); });
+
   actionsEl.appendChild(favBtn);
+  actionsEl.appendChild(copyBtn);
   actionsEl.appendChild(playBtn);
 
   if (deletable) {
@@ -1088,7 +1095,7 @@ function renderTriggerRow(key, deletable) {
 
   // ── Touch-based swipe handling ──
   let startX = 0, startY = 0, dx = 0, isSwipe = false, didMove = false;
-  const ACTION_WIDTH = deletable ? 180 : 120; // total px of actions
+  const ACTION_WIDTH = (deletable ? 4 : 3) * 60; // total px of actions (Fav, Copy, Play, [Del])
 
   inner.addEventListener('touchstart', e => {
     // Close other open row
@@ -1190,6 +1197,22 @@ async function runTrigger(key) {
       showToast(res.ok ? '▶ Triggered' : '⚠ Server Error');
     }
   } catch(e) { showToast('⚠ Could not connect to device'); }
+}
+
+function copyTriggerUrl(key) {
+  const url = `${window.location.protocol}//${window.location.host}/api/trigger/${encodeURIComponent(key)}`;
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('✓ URL Copied');
+  }).catch(() => {
+    // Fallback for non-https/older browsers if needed
+    const el = document.createElement('textarea');
+    el.value = url;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    showToast('✓ URL Copied');
+  });
 }
 
 // ── Actions panel ─────────────────────────────────────────────────────────────
