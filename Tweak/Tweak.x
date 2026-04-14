@@ -936,6 +936,70 @@ static BOOL RC_IsForegroundAppExcluded() {
     }
 }
 
+static NSString *get_human_name_for_trigger(NSString *key, NSDictionary *triggerData) {
+    if (!key) return @"Unknown";
+    
+    // 1. Check for custom user-defined name first
+    if ([triggerData isKindOfClass:[NSDictionary class]] && triggerData[@"name"]) {
+        return triggerData[@"name"];
+    }
+    if ([triggerData isKindOfClass:[NSDictionary class]] && triggerData[@"title"]) {
+        return triggerData[@"title"];
+    }
+    
+    // 2. Built-in mappings
+    static NSDictionary *builtInNames = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        builtInNames = @{
+            @"shake": @"Shake Device",
+            @"volume_up_hold": @"Volume Up Hold",
+            @"volume_down_hold": @"Volume Down Hold",
+            @"volume_both_press": @"Volume Up + Down (Both)",
+            @"power_double_tap": @"Power Double-Tap",
+            @"power_long_press": @"Power Long Press",
+            @"power_triple_click": @"Power Triple Click",
+            @"power_quadruple_click": @"Power Quadruple Click",
+            @"power_volume_up": @"Power + Volume Up",
+            @"power_volume_down": @"Power + Volume Down",
+            @"trigger_statusbar_left_hold": @"Status Bar Left Hold",
+            @"trigger_statusbar_center_hold": @"Status Bar Center Hold",
+            @"trigger_statusbar_right_hold": @"Status Bar Right Hold",
+            @"trigger_statusbar_swipe_left": @"Status Bar Swipe Left",
+            @"trigger_statusbar_swipe_right": @"Status Bar Swipe Right",
+            @"trigger_home_triple_click": @"Home Button (Triple Click)",
+            @"trigger_home_quadruple_click": @"Home Button (Quadruple Click)",
+            @"trigger_home_double_click": @"Home Button (Double Click)",
+            @"touchid_hold": @"Touch ID Hold (Rest Finger)",
+            @"touchid_tap": @"Touch ID Single Tap",
+            @"trigger_edge_left_swipe_up": @"Left Edge Swipe Up",
+            @"trigger_edge_left_swipe_down": @"Left Edge Swipe Down",
+            @"trigger_edge_right_swipe_up": @"Right Edge Swipe Up",
+            @"trigger_edge_right_swipe_down": @"Right Edge Swipe Down",
+            @"trigger_ringer_mute": @"Ringer Muted",
+            @"trigger_ringer_unmute": @"Ringer Unmuted",
+            @"trigger_ringer_toggle": @"Ringer Toggled",
+            @"trigger_bottombar_swipe_left": @"Bottom Bar Swipe Left",
+            @"trigger_bottombar_swipe_right": @"Bottom Bar Swipe Right"
+        };
+    });
+    
+    NSString *builtIn = builtInNames[key];
+    if (builtIn) return builtIn;
+    
+    // 3. Prefix-based fallback
+    if ([key hasPrefix:@"nfc_"]) return [NSString stringWithFormat:@"NFC Tag %@", [key substringFromIndex:4]];
+    if ([key hasPrefix:@"wifi_connect_"]) return [NSString stringWithFormat:@"WiFi Connected: %@", [key substringFromIndex:13]];
+    if ([key hasPrefix:@"wifi_disconnect_"]) return [NSString stringWithFormat:@"WiFi Disconnected: %@", [key substringFromIndex:16]];
+    if ([key hasPrefix:@"bt_connect_"]) return [NSString stringWithFormat:@"Bluetooth Connected: %@", [key substringFromIndex:11]];
+    if ([key hasPrefix:@"bt_disconnect_"]) return [NSString stringWithFormat:@"Bluetooth Disconnected: %@", [key substringFromIndex:14]];
+    if ([key hasPrefix:@"app_launch_"]) return [NSString stringWithFormat:@"App Launched: %@", [key substringFromIndex:11]];
+    if ([key hasPrefix:@"notif_"]) return @"Notification Trigger";
+    if ([key hasPrefix:@"sched_"]) return @"Scheduled Automation";
+    
+    return key;
+}
+
 static void load_trigger_config() {
     @autoreleasepool {
         // Find the config file
@@ -3887,7 +3951,10 @@ static NSString *handle_command(NSString *cmd) {
         for (NSString *key in [allKeys sortedArrayUsingSelector:@selector(compare:)]) {
             NSDictionary *trigger = triggers[key];
             if ([trigger isKindOfClass:[NSDictionary class]]) {
-                NSString *title = trigger[@"title"] ?: @"Untitled";
+                // Skip watch triggers as they are deprecated/non-functional
+                if ([key hasPrefix:@"watch_"]) continue;
+                
+                NSString *title = get_human_name_for_trigger(key, trigger);
                 [list appendFormat:@"- %@: %@\n", key, title];
             }
         }
@@ -4010,6 +4077,34 @@ static void start_web_server() {
                                             }
                                         }
                                     }
+                                }
+                            } else if ([path isEqualToString:@"/api/triggers"] && [method isEqualToString:@"GET"]) {
+                                load_trigger_config();
+                                if (![g_triggerConfig[@"webUIEnabled"] boolValue]) {
+                                    responseString = [NSString stringWithFormat:@"HTTP/1.1 403 Forbidden\r\n%@Content-Length: 17\r\n\r\nWeb UI is disabled", cors];
+                                } else {
+                                    id triggers = g_triggerConfig[@"triggers"];
+                                    NSMutableArray *triggerList = [NSMutableArray array];
+                                    if (triggers && [triggers isKindOfClass:[NSDictionary class]]) {
+                                        NSArray *allKeys = [(NSDictionary *)triggers allKeys];
+                                        for (NSString *key in [allKeys sortedArrayUsingSelector:@selector(compare:)]) {
+                                            NSDictionary *trigger = triggers[key];
+                                            if ([trigger isKindOfClass:[NSDictionary class]]) {
+                                                if ([key hasPrefix:@"watch_"]) continue;
+                                                NSString *title = get_human_name_for_trigger(key, trigger);
+                                                NSString *encodedKey = [key stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLPathAllowedCharacterSet]];
+                                                [triggerList addObject:@{
+                                                    @"id": key,
+                                                    @"name": title,
+                                                    @"url": [NSString stringWithFormat:@"/api/trigger/%@", encodedKey]
+                                                }];
+                                            }
+                                        }
+                                    }
+                                    NSDictionary *resp = @{@"ok": @YES, @"triggers": triggerList};
+                                    NSData *respData = [NSJSONSerialization dataWithJSONObject:resp options:NSJSONWritingPrettyPrinted error:nil];
+                                    NSString *jsonStr = [[NSString alloc] initWithData:respData encoding:NSUTF8StringEncoding];
+                                    responseString = [NSString stringWithFormat:@"HTTP/1.1 200 OK\r\n%@Content-Type: application/json\r\nContent-Length: %lu\r\n\r\n%@", cors, (unsigned long)respData.length, jsonStr];
                                 }
                             } else if ([path hasPrefix:@"/api/command"]) {
                                 load_trigger_config();

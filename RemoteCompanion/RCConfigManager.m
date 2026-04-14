@@ -117,6 +117,15 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
             _config[@"webUIEnabled"] = @NO;
             [self saveConfig];
         }
+
+        // Cleanup deprecated watch triggers
+        BOOL didChange = NO;
+        if (triggers[@"watch_near"]) { [triggers removeObjectForKey:@"watch_near"]; didChange = YES; }
+        if (triggers[@"watch_far"]) { [triggers removeObjectForKey:@"watch_far"]; didChange = YES; }
+        if (didChange) {
+            _config[@"triggers"] = triggers;
+            [self saveConfig];
+        }
     } else {
         // Default config with all triggers
         NSLog(@"[RCConfigManager] Using default config");
