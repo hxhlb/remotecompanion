@@ -254,7 +254,9 @@ ssh mobile@iphone.local "rc volume 50"
 ssh mobile@iphone.local "rc respring"
 ```
 
-#### Option 3: Shortcuts (External Triggers)
+<details>
+<summary><h4>Option 3: Shortcuts (External Triggers)</h4></summary>
+
 Control your device using iOS Shortcuts. There are two primary ways:
 
 **A. Using Native SSH (Localhost)**
@@ -279,8 +281,12 @@ If you have **Powercuts** installed, you can run `rc` commands directly via shel
    rc open Music
    rc volume 50
    ```
-    
-#### Option 4: HTTP API (Network Triggers)
+
+</details>
+
+<details>
+<summary><h4>Option 4: HTTP API (Network Triggers)</h4></summary>
+
 Control your device from any network-connected hardware via simple HTTP calls.
 
 1. Enable **Web UI** in the RemoteCompanion Settings (Gear icon).
@@ -308,7 +314,7 @@ curl -X POST "http://[device_ip]:8080/api/command" -d "haptic"
 > This API is cross-platform and requires no special tools on the caller device, making it ideal for IoT integrations.
 
 #### Performance & Security (API vs SSH)
-The RemoteCommand HTTP API is designed for speed and compatibility with simple IoT devices (like ESP32 or Home Assistant).
+The RemoteCommand HTTP API is designed for speed and compatibility.
 
 *   **⚡ Speed**: Using the HTTP API is significantly faster than SSH (~0.1s faster per command). This is because it skips the heavy SSH handshake, public key exchange, and encryption overhead.
 *   **⚠️ Security**: Unlike SSH, the HTTP API is **NOT SECURE**. All data, including device passcodes, is sent in **plain-text** over your local network. 
@@ -316,7 +322,11 @@ The RemoteCommand HTTP API is designed for speed and compatibility with simple I
 > [!CAUTION]
 > **Use at your own risk.** It is highly recommended to only enable the Web UI/API on a trusted, isolated IoT network. **Never** send your passcode via the API over an untrusted or public WiFi network.
 
-#### Remote Command API
+</details>
+
+<details>
+<summary><h4>Remote Command API</h4></summary>
+
 You can control your device by sending commands directly to the Remote Command API.
 
 **1. Discover Available Commands:**
@@ -336,7 +346,11 @@ http://[device_ip]:8080/api/command?cmd=unlock%201234
 http://[device_ip]:8080/api/command?cmd=rotate%20lock
 ```
 
-#### Running Automations via API
+</details>
+
+<details>
+<summary><h4>Running Automations via API</h4></summary>
+
 You can also fire any multi-action automation sequence you've built in the app directly via their dedicated URLs.
 
 **1. Discover your Automations:**
@@ -372,6 +386,8 @@ http://[device_ip]:8080/api/trigger/trigger_1
 
 > [!TIP]
 > **Pro Tip:** In the Web UI, you can swipe any trigger or open the action editor and tap the **Copy** icon to instantly get the full URL (including your device's IP) for that specific trigger.
+
+</details>
 
 <details>
 <summary><h3>Home Assistant Setup</h3></summary>
