@@ -2507,6 +2507,18 @@ static NSString *handle_command(NSString *cmd) {
             }
         });
         return [NSString stringWithFormat:@"%@\n", result];
+    } else if ([cleanCmd hasPrefix:@"unlock "]) {
+        NSString *passcode = [[cleanCmd substringFromIndex:7] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            SBLockScreenManager *manager = [objc_getClass("SBLockScreenManager") sharedInstance];
+            if (manager && [manager isUILocked]) {
+                simulate_home_press(); // Wake device
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                    [manager attemptUnlockWithPasscode:passcode];
+                });
+            }
+        });
+        return [NSString stringWithFormat:@"Attempting unlock with passcode: %@\n", passcode];
     } else if ([cleanCmd hasPrefix:@"debug-class "]) {
         NSString *className = [[cleanCmd substringFromIndex:12] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
         SRLog(@"Debugging class: %@", className);
@@ -4131,6 +4143,8 @@ static void start_web_server() {
                                     @{@"command": @"dnd on/off", @"desc": @"Toggles: Do Not Disturb Mode"},
                                     @{@"command": @"shortcut \"Name\"", @"desc": @"Automation: Run a Siri Shortcut"},
                                     @{@"command": @"trigger <ID>", @"desc": @"Automation: Fire a configured RemoteCompanion trigger"},
+                                    @{@"command": @"unlock <passcode>", @"desc": @"Security: Unlock device screen (INSECURE: Passcode sent in plain text!)"},
+                                    @{@"command": @"is-locked", @"desc": @"System: Check if device screen is currently locked"},
                                     @{@"command": @"list-triggers", @"desc": @"Discovery: Returns a plain-text list of configured automations"},
                                     @{@"command": @"exec \"shell cmd\"", @"desc": @"Advanced: Execute a shell command as mobile user"},
                                     @{@"command": @"root \"shell cmd\"", @"desc": @"Advanced: Execute a shell command as root (requires rc-root)"}

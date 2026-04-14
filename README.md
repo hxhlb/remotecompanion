@@ -282,7 +282,7 @@ If you have **Powercuts** installed, you can run `rc` commands directly via shel
    ```
     
 #### Option 4: HTTP API (Network Triggers)
-Control your device from any network-connected hardware (like Home Assistant, physical ESP32 buttons, or browser scripts) via simple HTTP calls.
+Control your device from any network-connected hardware via simple HTTP calls.
 
 1. Enable **Web UI** in the RemoteCompanion Settings (Gear icon).
 2. Send commands using `GET` or `POST`:
@@ -308,18 +308,31 @@ curl -X POST "http://[device_ip]:8080/api/command" -d "haptic"
 > [!TIP]
 > This API is cross-platform and requires no special tools on the caller device, making it ideal for IoT integrations.
 
+#### Performance & Security (API vs SSH)
+The RemoteCommand HTTP API is designed for speed and compatibility with simple IoT devices (like ESP32 or Home Assistant).
+
+*   **⚡ Speed**: Using the HTTP API is significantly faster than SSH (~0.1s faster per command). This is because it skips the heavy SSH handshake, public key exchange, and encryption overhead.
+*   **⚠️ Security**: Unlike SSH, the HTTP API is **NOT SECURE**. All data, including device passcodes, is sent in **plain-text** over your local network. 
+
+> [!CAUTION]
+> **Use at your own risk.** It is highly recommended to only enable the Web UI/API on a trusted, isolated IoT network. **Never** send your passcode via the API over an untrusted or public WiFi network.
+
 #### Remote Command API
 You can control your device by sending commands directly to the Remote Command API.
 
 **1. Discover Available Commands:**
-Get a list of all supported commands and their descriptions:
+Get a list of all supported commands and their descriptions via the discovery endpoint:
 ```bash
 http://[device_ip]:8080/api/commands
 ```
 
 **2. Execute a Command:**
-Send the command string via the `cmd` parameter:
+Send the command string via the `cmd` parameter. 
+
 ```bash
+# Example: Unlock device (Warning: Passcode sent in plain-text!)
+http://[device_ip]:8080/api/command?cmd=unlock%201234
+
 # Example: Lock orientation
 http://[device_ip]:8080/api/command?cmd=rotate%20lock
 ```
