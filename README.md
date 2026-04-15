@@ -47,16 +47,11 @@ Access the desktop-class automation hub at `http://[DEVICE_IP]:8080` from any co
 - **Live Device Discovery**: Dynamically search and select installed Apps, nearby Bluetooth hardware, and Wi-Fi networks using integrated search bars.
 - **Remote Testing**: Trigger actions and troubleshoot sequences directly from your browser with live execution buttons.
 - **One-Tap API Integration**: Every trigger has a dedicated **Copy API Link** button providing a direct URL to fire that trigger from any network-connected hardware or custom scripts.
-
-> [!TIP]
-> **API Link Copying**: In the Web UI, you can swipe any trigger and tap the **Copy** icon to instantly get the full API URL (including your device's IP). This makes it easy to integrate your automations into Home Assistant, Stream Decks, or external buttons.
+- **API Link Copying**: In the Web UI, you can swipe any trigger and tap the **Copy** icon to instantly get the full API URL (including your device's IP).
 - **Negligible Battery Impact**: The Web UI server is extremely efficient, consuming zero CPU cycles when idle. It uses a background thread with a blocking `accept()` loop that sits dormant until a connection is made.
 - **Configuration Management**: Import and export your entire trigger database for easy backups and migration between devices.
 
 ## What you can do
-
-> [!TIP]
-> **Command Consistency**: Most commands support `on`, `off`, `toggle`, and `status` arguments. For example, `rc dnd toggle` or `rc wifi status`.
 
 ### Media & Volume
 - `rc play` / `rc pause` / `rc playpause` / `rc next` / `rc prev`
