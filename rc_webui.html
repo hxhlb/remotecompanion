@@ -634,6 +634,11 @@
         <span class="toggle-label">Enabled</span>
         <input type="checkbox" class="ios-toggle" id="trigger-enabled-toggle" onchange="onTriggerEnabledChange()">
       </div>
+      <div class="action-list-row" id="edit-trigger-settings-row" style="display:none; border-top: 0.5px solid rgba(255,255,255,0.08);" onclick="onEditTriggerSettings()">
+        <div class="action-row-icon icon-blue"><i class="f7-icons">gear_alt_fill</i></div>
+        <div class="action-row-text">Edit Trigger Settings</div>
+        <i class="f7-icons" style="color:#3a3a3c;font-size:14px;margin-left:8px">chevron_right</i>
+      </div>
     </div>
 
     <div class="action-list-header">Action Sequence</div>
@@ -1465,15 +1470,59 @@ function copyTriggerUrl(key, btnEl) {
 }
 
 // ── Actions panel ─────────────────────────────────────────────────────────────
+let editingTriggerKey = null;
+
 function openActionsPanel(key) {
   currentKey = key;
+  editingTriggerKey = null; // reset
   const data = triggerData(key);
   const name = nameForKey(key);
   document.getElementById('actions-panel-title').textContent = name;
   document.getElementById('actions-large-title').textContent = name;
   document.getElementById('trigger-enabled-toggle').checked = !!data.enabled;
+  
+  // Show/Hide edit settings button based on trigger type
+  const editRow = document.getElementById('edit-trigger-settings-row');
+  const isSched = key.startsWith('sched_');
+  const isNotif = key.startsWith('notif_');
+  const isWiFi = key.startsWith('wifi_');
+  const isBT = key.startsWith('bt_');
+  const isApp = key.startsWith('app_launch_');
+  
+  if (isSched || isNotif || isWiFi || isBT || isApp) {
+    editRow.style.display = 'flex';
+  } else {
+    editRow.style.display = 'none';
+  }
+
   renderActionList();
   document.getElementById('actions-panel').classList.add('active');
+}
+
+function onEditTriggerSettings() {
+  if (!currentKey) return;
+  const isSched = currentKey.startsWith('sched_');
+  const isNotif = currentKey.startsWith('notif_');
+  const isWiFi = currentKey.startsWith('wifi_');
+  const isBT = currentKey.startsWith('bt_');
+  
+  if (isSched) promptSchedTrigger(currentKey);
+  else if (isNotif) promptNotifTrigger(currentKey);
+  else if (isWiFi) promptComplexTrigger('wifi', currentKey);
+  else if (isBT) promptComplexTrigger('bt', currentKey);
+  else if (isApp) promptAppEdit(currentKey);
+}
+
+function promptAppEdit(key) {
+  const data = config.triggers[key];
+  if (!data) return;
+  const bid = key.replace('app_launch_', '');
+  showDialog('Edit App Trigger', `Bundle ID: ${bid}\n\nDisplay Name:`, data.name, 'Save', val => {
+    if (!val) return;
+    data.name = val;
+    saveConfig(); renderAll();
+    openActionsPanel(key);
+  });
 }
 
 function closeActionsPanel() {
@@ -1855,16 +1904,31 @@ function renderAppPickerList(apps) {
 }
 
 // ── Scheduled Trigger Dialog ─────────────────────────────────────────────────
-function promptSchedTrigger() {
+function promptSchedTrigger(existingKey) {
+  editingTriggerKey = existingKey || null;
+  const data = editingTriggerKey ? config.triggers[editingTriggerKey] : null;
+  const sched = data ? data.schedule : null;
+
   const now = new Date();
-  const hh = String(now.getHours()).padStart(2,'0');
-  const mm = String(now.getMinutes()).padStart(2,'0');
-  document.getElementById('sched-name').value = '';
+  const hh = sched ? String(sched.hour).padStart(2,'0') : String(now.getHours()).padStart(2,'0');
+  const mm = sched ? String(sched.minute).padStart(2,'0') : String(now.getMinutes()).padStart(2,'0');
+  
+  document.getElementById('sched-name').value = data ? data.name : '';
   document.getElementById('sched-time').value = `${hh}:${mm}`;
-  // Check all day pills by default
-  document.querySelectorAll('#sched-days input[type=checkbox]').forEach(cb => cb.checked = true);
+  document.getElementById('sched-dialog-ok').textContent = editingTriggerKey ? 'Save' : 'Create';
+  
+  // Pre-check days
+  const dayCbs = document.querySelectorAll('#sched-days input[type=checkbox]');
+  dayCbs.forEach(cb => {
+    if (sched && sched.days) {
+      cb.checked = sched.days.includes(parseInt(cb.value));
+    } else {
+      cb.checked = true; // Default for new
+    }
+  });
+
   document.getElementById('sched-dialog-backdrop').classList.add('visible');
-  setTimeout(() => document.getElementById('sched-name').focus(), 100);
+  if (!editingTriggerKey) setTimeout(() => document.getElementById('sched-name').focus(), 100);
 }
 
 function closeSchedDialog() {
@@ -1882,28 +1946,52 @@ function schedDialogOk() {
   const [hourStr, minStr] = timeVal.split(':');
   const hour = parseInt(hourStr);
   const minute = parseInt(minStr);
-  const key = `sched_${name.toLowerCase().replace(/[ \t\n\r]+/g,'_').replace(/[^a-z0-9_]/g,'')}`;
-  config.triggers[key] = {
-    enabled: true,
-    actions: [],
-    name: name,
-    schedule: { hour, minute, days: checkedDays }
-  };
+
+  if (editingTriggerKey) {
+    // Update existing
+    const data = config.triggers[editingTriggerKey];
+    data.name = name;
+    data.schedule = { hour, minute, days: checkedDays };
+  } else {
+    // Create new
+    const key = `sched_${name.toLowerCase().replace(/[ \t\n\r]+/g,'_').replace(/[^a-z0-9_]/g,'')}`;
+    config.triggers[key] = {
+      enabled: true,
+      actions: [],
+      name: name,
+      schedule: { hour, minute, days: checkedDays }
+    };
+    // Open the new trigger for editing
+    setTimeout(() => openActionsPanel(key), 400);
+  }
+
   closeSchedDialog();
   saveConfig(); renderAll();
-  // Open the new trigger for editing
-  setTimeout(() => openActionsPanel(key), 400);
 }
 
 // ── Notification Trigger Dialog ────────────────────────────────────────────────
-function promptNotifTrigger() {
-  document.getElementById('notif-name').value = '';
-  document.getElementById('notif-bundle').value = '';
-  document.getElementById('notif-text').value = '';
+function promptNotifTrigger(existingKey) {
+  editingTriggerKey = existingKey || null;
+  const data = editingTriggerKey ? config.triggers[editingTriggerKey] : null;
+  let bundleId = '';
+  let textMatch = '';
+  
+  if (editingTriggerKey && config.notificationTriggers) {
+    const entry = config.notificationTriggers.find(t => t.triggerKey === editingTriggerKey);
+    if (entry) {
+      bundleId = entry.bundleId || '';
+      textMatch = entry.textMatch || '';
+    }
+  }
+
+  document.getElementById('notif-name').value = data ? data.name : '';
+  document.getElementById('notif-bundle').value = bundleId;
+  document.getElementById('notif-text').value = textMatch;
+  document.getElementById('notif-dialog-ok').textContent = editingTriggerKey ? 'Save' : 'Create';
   document.getElementById('notif-dialog-backdrop').classList.add('visible');
   
   refreshDatalists();
-  setTimeout(() => document.getElementById('notif-name').focus(), 100);
+  if (!editingTriggerKey) setTimeout(() => document.getElementById('notif-name').focus(), 100);
 }
 
 function closeNotifDialog() {
@@ -1916,9 +2004,15 @@ function notifDialogOk() {
   const textMatch= document.getElementById('notif-text').value.trim();
   if (!name)     { showToast('⚠ Name required');      return; }
   if (!bundleId) { showToast('⚠ Bundle ID required'); return; }
-  const key = `notif_${name.toLowerCase().replace(/[ \t\n\r]+/g,'_').replace(/[^a-z0-9_]/g,'')}`;
-  // Create the trigger entry (holds actions)
-  config.triggers[key] = { enabled: true, actions: [], name };
+
+  let key = editingTriggerKey;
+  if (!key) {
+    key = `notif_${name.toLowerCase().replace(/[ \t\n\r]+/g,'_').replace(/[^a-z0-9_]/g,'')}`;
+    config.triggers[key] = { enabled: true, actions: [], name };
+  } else {
+    config.triggers[key].name = name;
+  }
+
   // Add/update entry in notificationTriggers array (read by backend hook)
   if (!config.notificationTriggers) config.notificationTriggers = [];
   // Remove any existing entry for this key
@@ -1926,10 +2020,14 @@ function notifDialogOk() {
   const entry = { triggerKey: key, bundleId, enabled: true };
   if (textMatch) entry.textMatch = textMatch;
   config.notificationTriggers.push(entry);
+
   closeNotifDialog();
   saveConfig(); renderAll();
-  // Open the new trigger for editing
-  setTimeout(() => openActionsPanel(key), 400);
+  
+  if (!editingTriggerKey) {
+    // Open the new trigger for editing
+    setTimeout(() => openActionsPanel(key), 400);
+  }
 }
 
 // ── Complex Trigger (WiFi/BT) ────────────────────────────────────────────────
@@ -1999,13 +2097,25 @@ function setComplexSegment(seg) {
   document.getElementById('complex-seg-disconnect').style.background = seg === 'disconnect' ? '#007aff' : 'transparent';
 }
 
-async function promptComplexTrigger(type) {
+async function promptComplexTrigger(type, existingKey) {
+  editingTriggerKey = existingKey || null;
   complexTriggerType = type;
-  setComplexSegment('connect');
-  document.getElementById('complex-dialog-title').textContent = type === 'wifi' ? 'New WiFi Trigger' : 'New Bluetooth Trigger';
+  
+  let val = '';
+  let seg = 'connect';
+  
+  if (editingTriggerKey) {
+    const data = config.triggers[editingTriggerKey];
+    val = data.name || '';
+    if (editingTriggerKey.includes('_disconnect_')) seg = 'disconnect';
+  }
+
+  setComplexSegment(seg);
+  document.getElementById('complex-dialog-title').textContent = editingTriggerKey ? (type === 'wifi' ? 'Edit WiFi Trigger' : 'Edit Bluetooth Trigger') : (type === 'wifi' ? 'New WiFi Trigger' : 'New Bluetooth Trigger');
   document.getElementById('complex-dialog-msg').textContent = type === 'wifi' ? 'Select or type Network SSID' : 'Select or type Device Name';
-  document.getElementById('complex-dialog-input').value = '';
+  document.getElementById('complex-dialog-input').value = val;
   document.getElementById('complex-dialog-input').placeholder = type === 'wifi' ? 'Network SSID' : 'Device Name';
+  document.getElementById('complex-dialog-ok').textContent = editingTriggerKey ? 'Save' : 'Create';
   
   const datalist = document.getElementById('complex-dialog-datalist');
   datalist.innerHTML = '';
@@ -2033,14 +2143,26 @@ function complexDialogOk() {
     closeComplexDialog();
     return;
   }
-  closeComplexDialog();
   
-  // The backend uses literal trigger keys such as wifi_connect_My Home Network
-  // DO NOT transform or strip spaces since the event observer uses the literal phrase!
   const prefix = complexTriggerType; 
-  const key = `${prefix}_${complexTriggerSegment}_${val}`;
-  
-  config.triggers[key] = { enabled: true, actions: [], name: val };
+  const newKey = `${prefix}_${complexTriggerSegment}_${val}`;
+
+  if (editingTriggerKey) {
+    // If the key changed (SSID/Device name or segment changed), we must migrate
+    if (editingTriggerKey !== newKey) {
+      config.triggers[newKey] = config.triggers[editingTriggerKey];
+      delete config.triggers[editingTriggerKey];
+      currentKey = newKey; // Update current view
+    }
+    config.triggers[newKey].name = val;
+  } else {
+    // Create new
+    config.triggers[newKey] = { enabled: true, actions: [], name: val };
+    // Open the new trigger for editing
+    setTimeout(() => openActionsPanel(newKey), 400);
+  }
+
+  closeComplexDialog();
   saveConfig(); renderAll();
 }
 
