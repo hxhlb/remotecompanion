@@ -332,9 +332,9 @@ Execution URLs for your specific triggers:
 *   **🔋 Efficiency**: The Web UI server sits in a dormant `accept()` loop, consuming **zero CPU cycles** when idle.
 </details>
 
+<details>
 ## Home Assistant Setup
 
-<details>
 <summary><b>Integration Guide</b></summary>
 
 The most reliable way to control your device from Home Assistant is via SSH.
