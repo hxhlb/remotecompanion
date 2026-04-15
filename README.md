@@ -20,16 +20,6 @@ RemoteCompanion provides fast, scriptable system control for modern rootless jai
   <img src="images/IMG_1516.PNG" width="160" alt="Trigger Config" />
 </p>
 
-## Table of Contents
-- [Features](#features)
-- [Web UI & Automations Hub](#web-ui--automations-hub)
-- [Command Reference](#what-you-can-do)
-- [Getting Started](#getting-started)
-- [Advanced Developer Tools](#advanced-developer-tools)
-- [Home Assistant Integration](#home-assistant-setup)
-- [Security](#security)
-- [Troubleshooting](#troubleshooting)
-
 ## Features
 - **Hardware Triggers**: Bind actions to Power/Volume buttons, Home button, Touch ID (Tap/Hold), or the Ringer Switch.
 - **Visual Excellence**: Modern iOS aesthetics with Large Titles, SF Symbols, and a professional dark terminal editor.
