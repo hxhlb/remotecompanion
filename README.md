@@ -33,12 +33,11 @@ RemoteCompanion provides fast, scriptable system control for modern rootless jai
 
 ## Web UI & Automations Hub
 
-Access the desktop-class automation hub at `http://[DEVICE_IP]:8080` from any computer or tablet on your local network.
+Access the desktop-class automation hub at `http://[DEVICE_IP]:8080` from any computer or tablet on your local network. Toggle **Web UI** in the RemoteCompanion Settings (Gear icon) or use the command `rc webui on`.
 
 <p align="center">
   <img src="images/webui.png" width="600" alt="Web UI Interface" />
 </p>
-- **Enable**: Toggle **Web UI** in the RemoteCompanion Settings (Gear icon) or use the command `rc webui on`.
 
 ### Key Features
 - **Visual Workflow Editor**: Build complex action sequences with an intuitive drag-and-drop interface.
