@@ -1524,12 +1524,24 @@ static void check_scheduled_triggers() {
 }
 
 static void start_schedule_timer() {
-    SRLog(@"[Schedule] Starting background timer...");
+    SRLog(@"[Schedule] Starting background timer (Optimized)...");
     static dispatch_source_t timer;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
-        dispatch_source_set_timer(timer, DISPATCH_TIME_NOW, 1.0 * NSEC_PER_SEC, 0.1 * NSEC_PER_SEC);
+        
+        // Calculate seconds to next minute boundary
+        time_t now = time(NULL);
+        struct tm *tm_now = localtime(&now);
+        int secondsToNextMinute = 60 - tm_now->tm_sec;
+        
+        SRLog(@"[Schedule] Next check in %d seconds", secondsToNextMinute);
+        
+        dispatch_time_t start = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(secondsToNextMinute * NSEC_PER_SEC));
+        uint64_t interval = 60 * NSEC_PER_SEC;
+        uint64_t leeway = 0.5 * NSEC_PER_SEC; // Allow 500ms leeway for battery efficiency (OS batching)
+        
+        dispatch_source_set_timer(timer, start, interval, leeway);
         dispatch_source_set_event_handler(timer, ^{
             check_scheduled_triggers();
         });

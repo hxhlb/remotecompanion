@@ -355,6 +355,7 @@ curl -X POST "http://[device_ip]:8080/api/command" -d "haptic"
 The RemoteCommand HTTP API is designed for speed and compatibility.
 
 *   **⚡ Speed**: Using the HTTP API is significantly faster than SSH (~0.1s faster per command). This is because it skips the heavy SSH handshake, public key exchange, and encryption overhead.
+*   **🔋 Efficiency**: The Web UI server uses a **blocking `accept()` loop** on a background thread. This means it consumes **zero CPU cycles** when idle, sitting in a dormant state until a request is received. Enabling the Web UI in Settings has no measurable impact on battery life.
 *   **⚠️ Security**: Unlike SSH, the HTTP API is **NOT SECURE**. All data, including device passcodes, is sent in **plain-text** over your local network. 
 
 > [!CAUTION]
