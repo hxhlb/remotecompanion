@@ -6,17 +6,26 @@
 @property (nonatomic, strong) UIDatePicker *timePicker;
 @property (nonatomic, strong) NSMutableArray *selectedDays; // 1=Sun, 2=Mon, etc.
 @property (nonatomic, strong) NSArray *dayNames;
+@property (nonatomic, strong) NSString *triggerKey;
 @end
 
 @implementation RCScheduledTriggerViewController
 
+- (instancetype)initWithTriggerKey:(NSString *)triggerKey {
+    self = [super initWithStyle:UITableViewStyleInsetGrouped];
+    if (self) {
+        _triggerKey = triggerKey;
+    }
+    return self;
+}
+
 - (instancetype)init {
-    return [super initWithStyle:UITableViewStyleInsetGrouped];
+    return [self initWithTriggerKey:nil];
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"Scheduled Trigger";
+    self.title = self.triggerKey ? @"Edit Schedule" : @"New Schedule";
     
     [[NSNotificationCenter defaultCenter] addObserver:self 
                                              selector:@selector(applyTweaks) 
@@ -26,9 +35,37 @@
     [self applyTweaks];
     
     self.dayNames = @[@"Sunday", @"Monday", @"Tuesday", @"Wednesday", @"Thursday", @"Friday", @"Saturday"];
-    self.selectedDays = [NSMutableArray arrayWithArray:@[@1, @2, @3, @4, @5, @6, @7]]; // Default to all days
     
-    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Add" style:UIBarButtonItemStyleDone target:self action:@selector(saveTrigger)];
+    if (self.triggerKey) {
+        NSDictionary *data = [[RCConfigManager sharedManager] triggerDataForKey:self.triggerKey];
+        NSDictionary *sched = data[@"schedule"];
+        if (sched) {
+            NSInteger hour = [sched[@"hour"] integerValue];
+            NSInteger minute = [sched[@"minute"] integerValue];
+            NSArray *days = sched[@"days"];
+            
+            NSDateComponents *comp = [[NSDateComponents alloc] init];
+            comp.hour = hour;
+            comp.minute = minute;
+            NSDate *date = [[NSCalendar currentCalendar] dateFromComponents:comp];
+            
+            if (!self.timePicker) {
+                self.timePicker = [[UIDatePicker alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 150)];
+                self.timePicker.datePickerMode = UIDatePickerModeTime;
+                if (@available(iOS 13.4, *)) {
+                    self.timePicker.preferredDatePickerStyle = UIDatePickerStyleWheels;
+                }
+            }
+            [self.timePicker setDate:date animated:NO];
+            self.selectedDays = [NSMutableArray arrayWithArray:days];
+        } else {
+            self.selectedDays = [NSMutableArray arrayWithArray:@[@1, @2, @3, @4, @5, @6, @7]];
+        }
+    } else {
+        self.selectedDays = [NSMutableArray arrayWithArray:@[@1, @2, @3, @4, @5, @6, @7]]; // Default to all days
+    }
+    
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:self.triggerKey ? @"Save" : @"Add" style:UIBarButtonItemStyleDone target:self action:@selector(saveTrigger)];
 }
 
 - (void)applyTweaks {
@@ -121,9 +158,6 @@
     NSInteger hour = components.hour;
     NSInteger minute = components.minute;
     
-    // Generate a unique key
-    NSString *triggerKey = [NSString stringWithFormat:@"sched_%ld_%ld_%ld", (long)hour, (long)minute, (long)[[NSDate date] timeIntervalSince1970]];
-    
     // Create friendly name - e.g. "16:00 (Mon, Tue)"
     NSString *timeStr = [NSString stringWithFormat:@"%02ld:%02ld", (long)hour, (long)minute];
     
@@ -139,26 +173,46 @@
     
     NSString *daysStr = (shortDays.count == 7) ? @"Daily" : [shortDays componentsJoinedByString:@", "];
     NSString *friendlyName = [NSString stringWithFormat:@"%@ (%@)", timeStr, daysStr];
+
+    RCConfigManager *config = [RCConfigManager sharedManager];
+    NSString *triggerKey = self.triggerKey;
     
-    NSDictionary *triggerData = @{
-        @"name": friendlyName,
-        @"enabled": @YES,
-        @"actions": @[],
-        @"schedule": @{
+    if (triggerKey) {
+        // Update existing configuration
+        NSMutableDictionary *mutableData = [[config triggerDataForKey:triggerKey] mutableCopy];
+        mutableData[@"name"] = friendlyName;
+        mutableData[@"schedule"] = @{
             @"hour": @(hour),
             @"minute": @(minute),
             @"days": self.selectedDays
-        }
-    };
-    
-    [[RCConfigManager sharedManager] updateTrigger:triggerKey withData:triggerData];
-    
-    // Redirect to actions view
-    RCActionsViewController *vc = [[RCActionsViewController alloc] initWithTriggerKey:triggerKey];
-    NSMutableArray *vcs = [self.navigationController.viewControllers mutableCopy];
-    [vcs removeLastObject]; // Remove self
-    [vcs addObject:vc];
-    [self.navigationController setViewControllers:vcs animated:YES];
+        };
+        [config updateTrigger:triggerKey withData:mutableData];
+        
+        // Return to previous view
+        [self.navigationController popViewControllerAnimated:YES];
+    } else {
+        // Generate a new unique key
+        triggerKey = [NSString stringWithFormat:@"sched_%ld_%ld_%ld", (long)hour, (long)minute, (long)[[NSDate date] timeIntervalSince1970]];
+        
+        NSDictionary *triggerData = @{
+            @"name": friendlyName,
+            @"enabled": @YES,
+            @"actions": @[],
+            @"schedule": @{
+                @"hour": @(hour),
+                @"minute": @(minute),
+                @"days": self.selectedDays
+            }
+        };
+        [config updateTrigger:triggerKey withData:triggerData];
+        
+        // Redirect to actions view
+        RCActionsViewController *vc = [[RCActionsViewController alloc] initWithTriggerKey:triggerKey];
+        NSMutableArray *vcs = [self.navigationController.viewControllers mutableCopy];
+        [vcs removeLastObject]; // Remove self
+        [vcs addObject:vc];
+        [self.navigationController setViewControllers:vcs animated:YES];
+    }
 }
 
 @end

@@ -45,6 +45,7 @@ RemoteCompanion v3.0 introduces a desktop-class Web UI designed to mirror the na
 - **Live Device Discovery**: Dynamically search and select installed Apps, nearby Bluetooth hardware, and Wi-Fi networks using integrated search bars.
 - **One-Tap API Integration**: Every trigger has a dedicated **Copy API Link** button Providing a direct URL to fire that trigger from any network-connected hardware or custom scripts.
 - **Remote Testing**: Trigger actions and troubleshoot sequences directly from your browser with live execution buttons.
+- **Negligible Battery Impact**: The Web UI server is extremely efficient, consuming zero CPU cycles when idle. It uses a background thread with a blocking `accept()` loop that sits dormant until a connection is made.
 - **Configuration Management**: Import and export your entire trigger database for easy backups and migration between devices.
 
 ## What you can do
@@ -355,7 +356,8 @@ curl -X POST "http://[device_ip]:8080/api/command" -d "haptic"
 The RemoteCommand HTTP API is designed for speed and compatibility.
 
 *   **⚡ Speed**: Using the HTTP API is significantly faster than SSH (~0.1s faster per command). This is because it skips the heavy SSH handshake, public key exchange, and encryption overhead.
-*   **🔋 Efficiency**: The Web UI server uses a **blocking `accept()` loop** on a background thread. This means it consumes **zero CPU cycles** when idle, sitting in a dormant state until a request is received. Enabling the Web UI in Settings has no measurable impact on battery life.
+*   **🔋 Efficiency (Web UI)**: The Web UI server uses a **blocking `accept()` loop** on a background thread. This means it consumes **zero CPU cycles** when idle, sitting in a dormant state until a request is received. Enabling the Web UI in Settings has no measurable impact on idle battery life.
+*   **📡 Efficiency (Schedules)**: Background scheduled triggers are optimized to wake the CPU only once per minute (aligned to the minute boundary), drastically reducing background drain compared to traditional polling.
 *   **⚠️ Security**: Unlike SSH, the HTTP API is **NOT SECURE**. All data, including device passcodes, is sent in **plain-text** over your local network. 
 
 > [!CAUTION]

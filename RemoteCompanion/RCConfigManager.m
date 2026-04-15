@@ -61,6 +61,12 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
         } else if (![_config[@"triggers"] isKindOfClass:[NSMutableDictionary class]]) {
             _config[@"triggers"] = [_config[@"triggers"] mutableCopy];
         }
+
+        if (!_config[@"notificationTriggers"]) {
+            _config[@"notificationTriggers"] = [NSMutableArray array];
+        } else if (![_config[@"notificationTriggers"] isKindOfClass:[NSMutableArray class]]) {
+            _config[@"notificationTriggers"] = [_config[@"notificationTriggers"] mutableCopy];
+        }
         
         // Auto-add any missing triggers (for upgrades)
         NSMutableDictionary *triggers = _config[@"triggers"];
@@ -240,6 +246,10 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
 - (void)setHapticsEnabled:(BOOL)hapticsEnabled {
     _config[@"hapticsEnabled"] = @(hapticsEnabled);
     [self saveConfig];
+}
+
+- (NSDictionary *)triggerDataForKey:(NSString *)triggerKey {
+    return _config[@"triggers"][triggerKey];
 }
 
 - (void)updateTrigger:(NSString *)triggerKey withData:(NSDictionary *)data {
@@ -701,6 +711,19 @@ NSString *const RCConfigChangedNotification = @"RCConfigChangedNotification";
     }
     
     return result;
+}
+
+- (NSString *)nameForBundleId:(NSString *)bundleId {
+    if (!bundleId || bundleId.length == 0) return nil;
+    
+    Class LSProxy = NSClassFromString(@"LSApplicationProxy");
+    if (LSProxy) {
+        id app = [LSProxy performSelector:@selector(applicationProxyForIdentifier:) withObject:bundleId];
+        if (app) {
+            return [app performSelector:@selector(localizedName)];
+        }
+    }
+    return nil;
 }
 
 - (NSString *)iconForCommand:(id)cmdId {

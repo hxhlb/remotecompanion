@@ -7,20 +7,48 @@
 @property (nonatomic, strong) UITextField *textMatchField;
 @property (nonatomic, copy) NSString *selectedBundleId;
 @property (nonatomic, copy) NSString *selectedAppName;
+@property (nonatomic, strong) NSString *triggerKey;
 @end
 
 @implementation RCNotificationTriggerViewController
 
+- (instancetype)initWithTriggerKey:(NSString *)triggerKey {
+    self = [super initWithStyle:UITableViewStyleInsetGrouped];
+    if (self) {
+        _triggerKey = triggerKey;
+    }
+    return self;
+}
+
 - (instancetype)init {
-    return [super initWithStyle:UITableViewStyleInsetGrouped];
+    return [self initWithTriggerKey:nil];
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"Notification Trigger";
-    
+    self.title = self.triggerKey ? @"Edit Notification" : @"New Notification";
+
     self.selectedAppName = @"Any App"; // Default
     self.selectedBundleId = @"";
+
+    if (self.triggerKey) {
+        RCConfigManager *cm = [RCConfigManager sharedManager];
+        NSArray *notifTriggers = [cm notificationTriggers];
+        for (NSDictionary *entry in notifTriggers) {
+            if ([entry[@"triggerKey"] isEqualToString:self.triggerKey]) {
+                self.selectedBundleId = entry[@"bundleId"] ?: @"";
+                if (self.selectedBundleId.length > 0) {
+                    self.selectedAppName = [cm nameForBundleId:self.selectedBundleId] ?: self.selectedBundleId;
+                }
+                
+                if (!self.textMatchField) {
+                    self.textMatchField = [[UITextField alloc] init];
+                }
+                self.textMatchField.text = entry[@"textMatch"] ?: @"";
+                break;
+            }
+        }
+    }
     
     [[NSNotificationCenter defaultCenter] addObserver:self 
                                              selector:@selector(applyTweaks) 
@@ -29,7 +57,7 @@
     
     [self applyTweaks];
     
-    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Add" style:UIBarButtonItemStyleDone target:self action:@selector(saveTrigger)];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:self.triggerKey ? @"Save" : @"Add" style:UIBarButtonItemStyleDone target:self action:@selector(saveTrigger)];
 }
 
 - (void)applyTweaks {
@@ -158,9 +186,14 @@
         }
     }
     
+    
     RCConfigManager *config = [RCConfigManager sharedManager];
-    NSString *uniqueId = [[NSUUID UUID].UUIDString substringToIndex:8];
-    NSString *triggerKey = [NSString stringWithFormat:@"notif_%@", uniqueId];
+    NSString *triggerKey = self.triggerKey;
+    
+    if (!triggerKey) {
+        NSString *uniqueId = [[NSUUID UUID].UUIDString substringToIndex:8];
+        triggerKey = [NSString stringWithFormat:@"notif_%@", uniqueId];
+    }
     
     NSDictionary *notificationEntry = @{
         @"triggerKey": triggerKey,
@@ -171,23 +204,39 @@
     };
     
     NSMutableArray *notifTriggers = [[config notificationTriggers] mutableCopy];
+    // Remove existing if editing
+    for (NSInteger i = 0; i < notifTriggers.count; i++) {
+        if ([notifTriggers[i][@"triggerKey"] isEqualToString:triggerKey]) {
+            [notifTriggers removeObjectAtIndex:i];
+            break;
+        }
+    }
     [notifTriggers addObject:notificationEntry];
     [config setNotificationTriggers:notifTriggers];
     
-    NSDictionary *triggerData = @{
-        @"name": name,
-        @"enabled": @YES,
-        @"actions": @[]
-    };
-    
-    [config updateTrigger:triggerKey withData:triggerData];
-    
-    // Redirect to action picker
-    RCActionsViewController *vc = [[RCActionsViewController alloc] initWithTriggerKey:triggerKey];
-    NSMutableArray *vcs = [self.navigationController.viewControllers mutableCopy];
-    [vcs removeLastObject]; // Remove self
-    [vcs addObject:vc];
-    [self.navigationController setViewControllers:vcs animated:YES];
+    if (self.triggerKey) {
+        // Update existing trigger data
+        NSMutableDictionary *mutableData = [[config triggerDataForKey:triggerKey] mutableCopy];
+        mutableData[@"name"] = name;
+        [config updateTrigger:triggerKey withData:mutableData];
+        
+        [self.navigationController popViewControllerAnimated:YES];
+    } else {
+        // Create new
+        NSDictionary *triggerData = @{
+            @"name": name,
+            @"enabled": @YES,
+            @"actions": @[]
+        };
+        [config updateTrigger:triggerKey withData:triggerData];
+        
+        // Redirect to action picker
+        RCActionsViewController *vc = [[RCActionsViewController alloc] initWithTriggerKey:triggerKey];
+        NSMutableArray *vcs = [self.navigationController.viewControllers mutableCopy];
+        [vcs removeLastObject]; // Remove self
+        [vcs addObject:vc];
+        [self.navigationController setViewControllers:vcs animated:YES];
+    }
 }
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
