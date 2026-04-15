@@ -15,9 +15,9 @@ RemoteCompanion provides fast, scriptable system control for modern rootless jai
 <p align="center">
   <img src="images/IMG_1514.PNG" width="160" alt="Main Interface" />
   <img src="images/IMG_1515.PNG" width="160" alt="Action Picker" />
-  <img src="images/IMG_1516.PNG" width="160" alt="Trigger Config" />
   <img src="images/IMG_1517.PNG" width="160" alt="Design Engine" />
   <img src="images/IMG_1518.PNG" width="160" alt="Settings & Backup" />
+  <img src="images/IMG_1516.PNG" width="160" alt="Trigger Config" />
 </p>
 
 ## Features
@@ -36,7 +36,7 @@ RemoteCompanion provides fast, scriptable system control for modern rootless jai
 Access the desktop-class automation hub at `http://[DEVICE_IP]:8080` from any computer or tablet on your local network.
 
 <p align="center">
-  <img src="images/webui_1.png" width="600" alt="Web UI Interface" />
+  <img src="images/webui.png" width="600" alt="Web UI Interface" />
 </p>
 - **Enable**: Toggle **Web UI** in the RemoteCompanion Settings (Gear icon) or use the command `rc webui on`.
 
