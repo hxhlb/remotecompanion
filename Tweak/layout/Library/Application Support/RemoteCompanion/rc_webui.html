@@ -61,7 +61,8 @@
     .nav-btn {
       background: none; border: none; color: #fff;
       font-size: 17px; font-family: inherit;
-      cursor: pointer; padding: 8px 10px;
+      cursor: default; padding: 8px 10px;
+      user-select: none; -webkit-user-select: none;
       display: flex; align-items: center; justify-content: center;
       line-height: 1;
     }
@@ -114,7 +115,9 @@
       min-height: 54px;
       overflow: hidden;
       position: relative;
-      cursor: pointer;
+      cursor: default;
+      user-select: none;
+      -webkit-user-select: none;
       transition: background 0.15s;
     }
     .trigger-row:last-child { border-bottom: none; }
@@ -263,7 +266,8 @@
     }
     .panel-back {
       background: none; border: none; color: #007aff;
-      font-size: 17px; font-family: inherit; cursor: pointer;
+      font-size: 17px; font-family: inherit; cursor: default;
+      user-select: none; -webkit-user-select: none;
       display: flex; align-items: center; gap: 2px;
       padding: 8px; flex-shrink: 0; white-space: nowrap;
     }
@@ -308,6 +312,8 @@
       min-height: 50px;
       overflow: hidden; position: relative;
       background: #000;
+      user-select: none;
+      -webkit-user-select: none;
       transition: background 0.15s;
     }
     /* Separator line for actions */
@@ -351,7 +357,9 @@
       min-height: 50px;
       padding: 10px 16px;
       border-bottom: 0.5px solid rgba(255,255,255,0.08);
-      cursor: pointer;
+      cursor: default;
+      user-select: none;
+      -webkit-user-select: none;
     }
     .action-list-row:last-child { border-bottom: none; }
     .action-list-row:active { background: rgba(255,255,255,0.05); }
