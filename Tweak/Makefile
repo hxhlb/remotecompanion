@@ -29,5 +29,5 @@ include $(THEOS_MAKE_PATH)/tweak.mk
 
 SUBPROJECTS += rc-root
 SUBPROJECTS += rc-client
-SUBPROJECTS += ../RemoteCompanion
+# SUBPROJECTS += ../RemoteCompanion
 include $(THEOS_MAKE_PATH)/aggregate.mk
